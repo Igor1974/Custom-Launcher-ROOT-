@@ -55,6 +55,6 @@
 
 ---
 **Разработчик:** Igor1974
-**Текущая стабильная версия:** 5.0.1 (603)
+**Текущая стабильная версия:** 5.0.5 (607)
 
 <!-- Keywords: android tv launcher, tv box launcher, vpn, antizapret, root, boost, monitoring, jetpack compose, ota, deepnight, launcher for tv, 4pda, openvpn, leanback -->
