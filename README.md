@@ -6,7 +6,8 @@
 
 <p align="center">
   <img src="screenshots/main.png" width="45%" alt="Главный экран" />
-  <img src="screenshots/screen.png" width="45%" alt="Панель настроек" />
+  <img src="screenshots/setting.png" width="45%" alt="Панель настроек" />
+  <img src="screenshots/screen.png" width="45%" alt="Панель поиска" />
 </p>
 
 ## 🚀 Основные возможности
