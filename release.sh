@@ -59,7 +59,7 @@ with open('$UPDATE_JSON', 'r') as f:
 data['versionCode'] = $VERSION_CODE
 data['versionName'] = '$VERSION_NAME'
 data['link'] = '$DOWNLOAD_URL'
-data['changelog'] = 'Обновление до версии $VERSION_NAME'
+data['changelog'] = '1. Исправлена ошибка WorkerStoppedException в WallpaperWorker.\n2. Добавлены Accept заголовки для загрузки ИИ-обоев.\n3. Нормализованы постеры через TMDB Mirror для всех источников.\n4. Исправлена потеря фокуса в поиске при обновлении.\n5. Восстановлен marquee-скроллинг названий.\n6. Оптимизированы отступы UI (устранено перекрытие поисковой строки).\n7. Исправлена локализация погоды и AI-промптов.'
 with open('$UPDATE_JSON', 'w') as f:
     json.dump(data, f, indent=4)
 "

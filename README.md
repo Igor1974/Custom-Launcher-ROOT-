@@ -2,6 +2,13 @@
 
 Персонализированный и оптимизированный лаунчер для Android TV / TV Box с глубокой интеграцией системных функций и поддержкой ROOT-прав.
 
+## 📸 Скриншоты
+
+<p align="center">
+  <img src="screenshots/main.png" width="45%" alt="Главный экран" />
+  <img src="screenshots/settings.png" width="45%" alt="Панель настроек" />
+</p>
+
 ## 🚀 Основные возможности
 
 ### 🛠 Системные функции и ROOT
@@ -48,3 +55,5 @@
 ---
 **Разработчик:** Igor1974
 **Текущая стабильная версия:** 5.0.1 (603)
+
+<!-- Keywords: android tv launcher, tv box launcher, vpn, antizapret, root, boost, monitoring, jetpack compose, ota, deepnight, launcher for tv, 4pda, openvpn, leanback -->
