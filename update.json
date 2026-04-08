@@ -1,6 +1,6 @@
 {
-    "versionCode": 606,
-    "versionName": "5.0.4",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.0.4/DeepNight_Launcher_v5.0.4-release.apk",
+    "versionCode": 607,
+    "versionName": "5.0.5",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.0.5/DeepNight_Launcher_v5.0.5-release.apk",
     "changelog": "1. Исправлена ошибка WorkerStoppedException в WallpaperWorker.\n2. Добавлены Accept заголовки для загрузки ИИ-обоев.\n3. Нормализованы постеры через TMDB Mirror для всех источников.\n4. Исправлена потеря фокуса в поиске при обновлении.\n5. Восстановлен marquee-скроллинг названий.\n6. Оптимизированы отступы UI (устранено перекрытие поисковой строки).\n7. Исправлена локализация погоды и AI-промптов.\n8. Версия в AboutDialog теперь обновляется автоматически."
 }
