@@ -26,55 +26,60 @@ fi
 
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
-# 3. Поиск APK
-# Ищем последний измененный .apk в папке app, который относится к релизу
+# 3. Список изменений
+CHANGELOG_TEXT="1. Исправлена ошибка WorkerStoppedException в WallpaperWorker.
+2. Добавлены Accept заголовки для загрузки ИИ-обоев.
+3. Нормализованы постеры через TMDB Mirror для всех источников.
+4. Исправлена потеря фокуса в поиске при обновлении.
+5. Восстановлен marquee-скроллинг названий.
+6. Оптимизированы отступы UI (устранено перекрытие поисковой строки).
+7. Исправлена локализация погоды и AI-промптов.
+8. Версия в AboutDialog теперь обновляется автоматически."
+
+# 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 
 if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
     echo -e "${RED}Ошибка: APK не найден!${NC}"
-    echo "Я искал в папке 'app' файлы, содержащие 'release' и '.apk'"
-    echo "Убедитесь, что вы собрали APK: Build -> Generate Signed Bundle / APK"
     exit 1
 fi
 
 APK_FILENAME=$(basename "$APK_PATH")
 echo -e "Найден файл: ${GREEN}$APK_FILENAME${NC}"
 
-# 4. Обновление update.json
+# 5. Обновление update.json
 UPDATE_JSON="update.json"
-# Если файла нет, создаем базовый
 if [ ! -f "$UPDATE_JSON" ]; then
-    echo -e "${BLUE}Создаю новый $UPDATE_JSON...${NC}"
     echo '{"versionCode": 0, "versionName": "0", "link": "", "changelog": ""}' > "$UPDATE_JSON"
 fi
 
 echo -e "${BLUE}Обновляю $UPDATE_JSON...${NC}"
 DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME/$APK_FILENAME"
 
-# Используем временный файл для чистой замены через python (так надежнее с JSON)
+# Передаем чейнджлог в python через переменную окружения для избежания проблем с кавычками
+export CHANGELOG_ENV="$CHANGELOG_TEXT"
 python3 -c "
-import json
+import json, os
 with open('$UPDATE_JSON', 'r') as f:
     data = json.load(f)
 data['versionCode'] = $VERSION_CODE
 data['versionName'] = '$VERSION_NAME'
 data['link'] = '$DOWNLOAD_URL'
-data['changelog'] = '1. Исправлена ошибка WorkerStoppedException в WallpaperWorker.\n2. Добавлены Accept заголовки для загрузки ИИ-обоев.\n3. Нормализованы постеры через TMDB Mirror для всех источников.\n4. Исправлена потеря фокуса в поиске при обновлении.\n5. Восстановлен marquee-скроллинг названий.\n6. Оптимизированы отступы UI (устранено перекрытие поисковой строки).\n7. Исправлена локализация погоды и AI-промптов.\n8. Версия в AboutDialog теперь обновляется автоматически.'
+data['changelog'] = os.environ.get('CHANGELOG_ENV', '')
 with open('$UPDATE_JSON', 'w') as f:
-    json.dump(data, f, indent=4)
+    json.dump(data, f, indent=4, ensure_ascii=False)
 "
 
-# 5. Git commit & push
-echo -e "${BLUE}Синхронизация с Git (только update.json)...${NC}"
-git add "$UPDATE_JSON" .gitignore release.sh
-git commit -m "Update OTA info v$VERSION_NAME ($VERSION_CODE)"
+# 6. Git commit & push
+echo -e "${BLUE}Синхронизация с Git...${NC}"
+git add "$UPDATE_JSON" app/build.gradle.kts release.sh
+git commit -m "Release v$VERSION_NAME ($VERSION_CODE)"
 git push origin main --force
 
-# 6. Создание релиза на GitHub
+# 7. Создание релиза на GitHub
 TAG="v$VERSION_NAME"
 echo -e "${BLUE}Публикация релиза $TAG в GitHub...${NC}"
 
-# Проверяем, существует ли уже такой тег, если да - удаляем (перезапись)
 if gh release view "$TAG" &>/dev/null; then
     echo "Релиз $TAG уже существует. Перезаписываю..."
     gh release delete "$TAG" --yes
@@ -83,15 +88,13 @@ fi
 
 gh release create "$TAG" "$APK_PATH" \
     --title "Release $VERSION_NAME" \
-    --notes "Автоматическое обновление списка приложений, OTA и оптимизация интерфейса." \
+    --notes "$CHANGELOG_TEXT" \
     --target main
 
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}======================================"
     echo -e "   РЕЛИЗ v$VERSION_NAME УСПЕШНО ЗАВЕРШЕН!"
     echo -e "======================================${NC}"
-    echo "Файл $UPDATE_JSON обновлен и отправлен."
-    echo "APK загружен в релизы."
 else
     echo -e "${RED}Произошла ошибка при создании релиза.${NC}"
 fi
