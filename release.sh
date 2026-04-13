@@ -27,11 +27,10 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 # 3. Список изменений
-CHANGELOG_TEXT="11-полосный EQ (62.5Гц-16кГц): Использование нативного DynamicsProcessing для минимальной нагрузки на CPU.
-Loudness & MBC: Аддитивный подъем НЧ (+7дБ) и ВЧ (+4дБ) в сочетании с многополосной компрессией.
-Focus Guard: Цикл проверки и возврата фокуса каждые 30 сек для предотвращения 'улетания' фокуса на Android TV.
-Safe Update Engine: Исправлена установка APK на Android 11+ через FileProvider, проверка SHA-256 и OkHttp загрузчик.
-Audio Test: Обновлен тестовый трек на SoundHelix-Song-8 для качественной калибровки DSP."
+CHANGELOG_TEXT="Fix Update System: Исправлена ошибка 'Не удалось обработать пакет' на Android 11+ (переход на cacheDir и принудительные права доступа).
+11-band EQ: Высокоточный эквалайзер с лимитером и тонкомпенсацией (Loudness).
+Focus Guard: Автоматическое восстановление фокуса каждые 30 секунд для ТВ.
+Audio Engine: Оптимизированная обработка звука через DynamicsProcessing."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")

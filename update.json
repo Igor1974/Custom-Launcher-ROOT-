@@ -1,6 +1,6 @@
 {
-    "versionCode": 611,
-    "versionName": "5.0.8",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.0.8/DeepNight_Launcher_v5.0.8-release.apk",
-    "changelog": "11-полосный EQ (62.5Гц-16кГц): Использование нативного DynamicsProcessing для минимальной нагрузки на CPU.\nLoudness & MBC: Аддитивный подъем НЧ (+7дБ) и ВЧ (+4дБ) в сочетании с многополосной компрессией.\nFocus Guard: Цикл проверки и возврата фокуса каждые 30 сек для предотвращения 'улетания' фокуса на Android TV.\nSafe Update Engine: Исправлена установка APK на Android 11+ через FileProvider, проверка SHA-256 и OkHttp загрузчик.\nAudio Test: Обновлен тестовый трек на SoundHelix-Song-8 для качественной калибровки DSP."
+    "versionCode": 612,
+    "versionName": "5.0.9",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.0.9/DeepNight_Launcher_v5.0.9-release.apk",
+    "changelog": "Fix Update System: Исправлена ошибка 'Не удалось обработать пакет' на Android 11+ (переход на cacheDir и принудительные права доступа).\n11-band EQ: Высокоточный эквалайзер с лимитером и тонкомпенсацией (Loudness).\nFocus Guard: Автоматическое восстановление фокуса каждые 30 секунд для ТВ.\nAudio Engine: Оптимизированная обработка звука через DynamicsProcessing."
 }

@@ -84,9 +84,12 @@ object AppUpdateManager {
             }
         }
 
-        // Скачиваем в файловое хранилище приложения (не требует внешних разрешений)
-        val fileName = "DeepNight_Update_${update.versionCode}.apk"
-        val apkFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+        // Скачиваем в кэш-директорию приложения
+        val fileName = "update.apk"
+        val apkFile = File(context.cacheDir, fileName)
+        
+        // Удаляем старый файл если он есть
+        if (apkFile.exists()) apkFile.delete()
         
         withContext(Dispatchers.Main) {
             Toast.makeText(context, "Загрузка обновления...", Toast.LENGTH_SHORT).show()
@@ -161,9 +164,11 @@ object AppUpdateManager {
         
         if (!file.exists()) {
             Log.e(TAG, "Файл не существует")
-            Toast.makeText(context, "Файл обновления не найден", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // Делаем файл доступным для чтения другими приложениями (установщиком)
+        file.setReadable(true, false)
         
         val uri = FileProvider.getUriForFile(
             context,
@@ -171,13 +176,19 @@ object AppUpdateManager {
             file
         )
         
-        Log.d(TAG, "FileProvider URI: $uri")
-        
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                   Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                   Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+            putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, context.packageName)
+        }
+        
+        // Для Android 10+ (API 29+) используем ACTION_VIEW как более стандартный
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            installIntent.action = Intent.ACTION_VIEW
         }
         
         try {
