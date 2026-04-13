@@ -27,14 +27,11 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 # 3. Список изменений
-CHANGELOG_TEXT="DeepNight Audio (DSP): Полноценная поддержка стерео (2 канала) и защищенный лимитер (-1дБ) для предотвращения хрипов на ТВ-динамиках.
-Режим 'Ночной просмотр': Интеллектуальная компрессия звука для комфортного просмотра в вечернее время.
-Launcher Persistence: Улучшенная логика удержания статуса главного лаунчера через Accessibility и безопасную заморозку стоковых оболочек (TCL, Google TV).
-Screensaver Tuning: Смягчена пульсация погоды и часов в заставке для более премиального вида.
-Исправлено удержание фокуса в поиске: Убран агрессивный сброс фокуса на микрофон при обновлении экрана.
-Стабильность списков: Внедрены уникальные ключи для элементов сетки результатов, что предотвращает потерю фокуса при фоновом поиске.
-Оптимизация поиска: (из 5.0.6) Исключено качество 720p и SD, порог размера 1.5 ГБ.
-Ускорение TMDB: (из 5.0.6) Параллельный поиск по зеркалам."
+CHANGELOG_TEXT="11-полосный EQ (62.5Гц-16кГц): Использование нативного DynamicsProcessing для минимальной нагрузки на CPU.
+Loudness & MBC: Аддитивный подъем НЧ (+7дБ) и ВЧ (+4дБ) в сочетании с многополосной компрессией.
+Focus Guard: Цикл проверки и возврата фокуса каждые 30 сек для предотвращения 'улетания' фокуса на Android TV.
+Safe Update Engine: Исправлена установка APK на Android 11+ через FileProvider, проверка SHA-256 и OkHttp загрузчик.
+Audio Test: Обновлен тестовый трек на SoundHelix-Song-8 для качественной калибровки DSP."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
@@ -72,7 +69,11 @@ with open('$UPDATE_JSON', 'w') as f:
 
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
-git add "$UPDATE_JSON" app/build.gradle.kts release.sh
+git add -f "$UPDATE_JSON" app/build.gradle.kts release.sh \
+    app/src/main/java/com/deepnight/launcher/MainActivity.kt \
+    app/src/main/java/com/deepnight/launcher/AppUpdateManager.kt \
+    app/src/main/java/com/deepnight/launcher/SettingsOverlay.kt \
+    app/src/main/java/com/deepnight/launcher/dsp/DeepNightDSP.kt
 git commit -m "Release v$VERSION_NAME ($VERSION_CODE)"
 git push origin main --force
 
