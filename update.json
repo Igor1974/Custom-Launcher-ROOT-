@@ -1,6 +1,6 @@
 {
-    "versionCode": 612,
-    "versionName": "5.0.9",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.0.9/DeepNight_Launcher_v5.0.9-release.apk",
-    "changelog": "Fix Update System: Исправлена ошибка 'Не удалось обработать пакет' на Android 11+ (переход на cacheDir и принудительные права доступа).\n11-band EQ: Высокоточный эквалайзер с лимитером и тонкомпенсацией (Loudness).\nFocus Guard: Автоматическое восстановление фокуса каждые 30 секунд для ТВ.\nAudio Engine: Оптимизированная обработка звука через DynamicsProcessing."
+    "versionCode": 613,
+    "versionName": "5.1.0",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.1.0/DeepNight_Launcher_v5.1.0-release.apk",
+    "changelog": "Deep Night OS: Глубокая интеграция в систему, захват Home-кнопки и статуса Ассистента.\nVoice Search Fix: Исправлен конфликт с TCL MicManager, восстановлен системный голос.\nSearch Hijack: Полный перехват аппаратной кнопки микрофона для внутреннего поиска.\nPerformance: Устранены лаги UI при распознавании речи, оптимизирована рекомпозиция.\nRoot OS Manager: Автоматическая настройка прав и отключение bloatware при первом запуске."
 }

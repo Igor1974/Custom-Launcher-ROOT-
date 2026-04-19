@@ -88,6 +88,7 @@ fun SettingsOverlay(
     onPickFileWallpaper: () -> Unit,
     onPickVideoScreensaver: () -> Unit,
     onOpenAlarms: () -> Unit,
+    onOpenOsUpgrade: () -> Unit = {},
     onCheckUpdate: () -> Unit,
     onPreviewScreensaver: () -> Unit = {}
 ) {
@@ -117,6 +118,17 @@ fun SettingsOverlay(
 
     var isScreensaverEnabled by remember {
         mutableStateOf(if (isPreview) true else LauncherSettings.isScreensaverEnabled(context))
+    }
+
+    var isVisualizerEnabled by remember {
+        mutableStateOf(LauncherSettings.isVisualizerOverlayEnabled(context))
+    }
+
+    // Синхронизация при открытии
+    LaunchedEffect(Unit) {
+        if (!isPreview) {
+            isVisualizerEnabled = LauncherSettings.isVisualizerOverlayEnabled(context)
+        }
     }
 
     var isNightMode by remember {
@@ -455,6 +467,23 @@ fun SettingsOverlay(
                             )
 
                             CompactSettingButton(
+                                title = "ВИЗУАЛИЗАТОР: ${if (isVisualizerEnabled) "ВКЛ" else "ВЫКЛ"}",
+                                icon = Icons.Default.GraphicEq,
+                                isAccent = isVisualizerEnabled,
+                                onClick = {
+                                    onInteraction()
+                                    isVisualizerEnabled = !isVisualizerEnabled
+                                    LauncherSettings.setVisualizerOverlayEnabled(context, isVisualizerEnabled)
+                                    val intent = android.content.Intent(context, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
+                                    if (isVisualizerEnabled) {
+                                        context.startService(intent)
+                                    } else {
+                                        context.stopService(intent)
+                                    }
+                                }
+                            )
+
+                            CompactSettingButton(
                                 title = "LOUDNESS: ${(currentLoudness * 100).toInt()}%",
                                 icon = Icons.AutoMirrored.Filled.VolumeUp,
                                 onClick = {
@@ -606,6 +635,12 @@ fun SettingsOverlay(
                                 title = "DEEP NIGHT (ALARM)",
                                 icon = Icons.Default.Bedtime,
                                 onClick = onOpenAlarms
+                            )
+
+                            CompactSettingButton(
+                                title = "DEEP NIGHT OS CORE",
+                                icon = Icons.Default.Build,
+                                onClick = onOpenOsUpgrade
                             )
 
                             CompactSettingButton(

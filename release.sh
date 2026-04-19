@@ -27,10 +27,11 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 # 3. Список изменений
-CHANGELOG_TEXT="Fix Update System: Исправлена ошибка 'Не удалось обработать пакет' на Android 11+ (переход на cacheDir и принудительные права доступа).
-11-band EQ: Высокоточный эквалайзер с лимитером и тонкомпенсацией (Loudness).
-Focus Guard: Автоматическое восстановление фокуса каждые 30 секунд для ТВ.
-Audio Engine: Оптимизированная обработка звука через DynamicsProcessing."
+CHANGELOG_TEXT="Deep Night OS: Глубокая интеграция в систему, захват Home-кнопки и статуса Ассистента.
+Voice Search Fix: Исправлен конфликт с TCL MicManager, восстановлен системный голос.
+Search Hijack: Полный перехват аппаратной кнопки микрофона для внутреннего поиска.
+Performance: Устранены лаги UI при распознавании речи, оптимизирована рекомпозиция.
+Root OS Manager: Автоматическая настройка прав и отключение bloatware при первом запуске."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")

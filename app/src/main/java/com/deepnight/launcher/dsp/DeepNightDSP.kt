@@ -5,17 +5,17 @@ import android.util.Log
 
 /**
  * Продвинутый звуковой процессор DeepNight.
- * Реализован на базе DynamicsProcessing API (аналог Wavelet).
- * Поддерживает 2 канала (Stereo) для ТВ и внешних систем.
+ * Реализован на базе DynamicsProcessing API.
+ * Использует 11-полосную сетку для максимальной детализации звука.
  */
 class DeepNightDSP(private val sessionId: Int = 0) {
 
     private var engine: DynamicsProcessing? = null
     private val channelCount = 2 // Stereo
 
-    // Сетка частот Wavelet (11 полос)
+    // 11-полосная сетка (расширенная для ТВ и Hi-Fi акустики)
     private val bandFrequencies = floatArrayOf(
-        62.5f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f, 24000f, 32000f
+        31.25f, 62.5f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 12000f, 16000f
     )
 
     init {
@@ -31,13 +31,13 @@ class DeepNightDSP(private val sessionId: Int = 0) {
             val builder = DynamicsProcessing.Config.Builder(
                 DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
                 channelCount, 
-                true, // Pre-EQ включен
-                bandFrequencies.size, // 11 полос
-                true, // MBC включен
+                true, // Pre-EQ
                 bandFrequencies.size,
-                true, // Post-EQ включен
+                true, // MBC (Multi-band Compressor)
                 bandFrequencies.size,
-                true // Limiter включен
+                true, // Post-EQ
+                bandFrequencies.size,
+                true  // Limiter
             )
 
             engine = DynamicsProcessing(0, sessionId, builder.build())
@@ -49,80 +49,42 @@ class DeepNightDSP(private val sessionId: Int = 0) {
 
     private fun applyDefaultSettings() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            // Настройка лимитера согласно Wavelet: Attack 60ms, Release 10ms, Threshold -2dB
+            // Лимитер: Attack 60ms, Release 10ms, Threshold -2dB
             for (i in 0 until channelCount) {
                 val limiter = DynamicsProcessing.Limiter(
-                    true, // включен
-                    true, // в цепи
-                    i, // канал
-                    60f, // attack ms (Wavelet standard)
-                    10f, // release ms (Wavelet standard)
-                    1.0f, // ratio
-                    -2.0f, // threshold dB (Wavelet standard)
-                    0f // post gain
+                    true, true, i, 60f, 10f, 1.0f, -2.0f, 0f
                 )
                 engine?.setLimiterByChannelIndex(i, limiter)
             }
         }
     }
 
-    /**
-     * Включение/выключение режима "Ночной просмотр" (Компрессия)
-     * Сжимает динамический диапазон: тихие звуки становятся слышнее, громкие — тише.
-     */
     fun setNightMode(enabled: Boolean) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             for (i in 0 until channelCount) {
-                if (enabled) {
-                    // Агрессивный лимитер и компрессия для ночи (быстрая атака, долгий релиз)
-                    val nightLimiter = DynamicsProcessing.Limiter(
-                        true, true, i, 
-                        2f,     // attack
-                        120f,   // release
-                        10f,    // ratio
-                        -8f,    // threshold
-                        3f      // post gain (компенсация тишины)
-                    )
-                    engine?.setLimiterByChannelIndex(i, nightLimiter)
+                val limiter = if (enabled) {
+                    DynamicsProcessing.Limiter(true, true, i, 2f, 120f, 10f, -8f, 3f)
                 } else {
-                    // Возврат к эталону Wavelet
-                    val stdLimiter = DynamicsProcessing.Limiter(
-                        true, true, i, 
-                        60f,    // attack
-                        10f,    // release
-                        1.0f,   // ratio
-                        -2.0f,  // threshold
-                        0f      // post gain
-                    )
-                    engine?.setLimiterByChannelIndex(i, stdLimiter)
+                    DynamicsProcessing.Limiter(true, true, i, 60f, 10f, 1.0f, -2.0f, 0f)
                 }
+                engine?.setLimiterByChannelIndex(i, limiter)
             }
         }
     }
 
-    /**
-     * Применение пресета эквалайзера.
-     * Теперь настроено под 11-полосную сетку Wavelet.
-     */
     fun applyPreset(presetName: String) {
         if (presetName == "Custom") return
 
         val gains = when (presetName) {
-            // Movie: V-образная кривая, глубокий бас и кристальные верха
-            "Movie" -> floatArrayOf(6f, 4f, 2f, 0f, -1f, 0f, 1f, 3f, 5f, 6f, 7f)
-            // Music: Сбалансированный звук, акцент на деталях
-            "Music" -> floatArrayOf(4f, 2f, 0f, 0f, 0f, 0f, 1f, 2f, 4f, 5f, 6f)
-            // Voice: Режим четкости речи, срез низов, подъем середины
-            "Voice" -> floatArrayOf(-6f, -4f, -2f, 2f, 4f, 5f, 3f, 1f, -1f, -3f, -5f)
+            "Movie" -> floatArrayOf(6f, 5f, 3f, 1f, 0f, 0f, 1f, 3f, 5f, 6f, 7f)
+            "Music" -> floatArrayOf(4f, 3f, 1f, 0f, 0f, 0f, 1f, 2f, 4f, 5f, 6f)
+            "Voice" -> floatArrayOf(-6f, -4f, -2f, 1f, 3f, 5f, 4f, 2f, 0f, -2f, -4f)
             else -> FloatArray(bandFrequencies.size)
         }
 
         setCustomGains(gains)
     }
 
-    /**
-     * Применение пользовательских настроек эквалайзера.
-     */
     fun setCustomGains(gains: FloatArray) {
         if (gains.size == bandFrequencies.size) {
             gains.forEachIndexed { index, gain ->
@@ -131,14 +93,8 @@ class DeepNightDSP(private val sessionId: Int = 0) {
         }
     }
 
-    /**
-     * Эффект "Тонкомпенсации" (Equal Loudness) и расширения баса.
-     * Усиливает низкие и высокие частоты, делая звук "сочнее" на любой громкости.
-     * @param boost уровень усиления от 0.0 (выкл) до 1.0 (макс)
-     */
     fun setLoudness(boost: Float) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            // СТРОГОЕ ОТКЛЮЧЕНИЕ: если boost 0, выключаем весь движок, чтобы не было лишнего баса
             if (boost <= 0.01f) {
                 engine?.enabled = false
                 return
@@ -146,51 +102,43 @@ class DeepNightDSP(private val sessionId: Int = 0) {
 
             engine?.enabled = true
             
-            // Убираем Input Gain полностью, чтобы избежать клиппинга и срабатывания системного лимитера
             for (i in 0 until channelCount) {
                 engine?.setInputGainbyChannel(i, 0.0f)
             }
 
-            // Линейное усиление без Sqrt для предсказуемости
-            val lowBoost = boost * 7.0f // Максимум +7дБ (Wavelet Style)
-            val highBoost = boost * 4.0f // Максимум +4дБ
+            val lowBoost = boost * 7.5f 
+            val highBoost = boost * 5.0f
             
-            // Очистка Post-EQ перед применением Loudness
             for (index in bandFrequencies.indices) {
                 setPostEqBandGain(index, 0f)
             }
 
-            // Тонкомпенсация по новой сетке (11 полос)
-            setPostEqBandGain(0, lowBoost)        // 62.5Hz
-            setPostEqBandGain(1, lowBoost * 0.7f) // 125Hz
-            setPostEqBandGain(2, lowBoost * 0.3f) // 250Hz
+            // Тонкомпенсация (11 полос)
+            setPostEqBandGain(0, lowBoost)         // 31.25Hz
+            setPostEqBandGain(1, lowBoost * 0.85f)  // 62.5Hz
+            setPostEqBandGain(2, lowBoost * 0.45f)  // 125Hz
             
-            setPostEqBandGain(8, highBoost * 0.4f) // 16kHz
-            setPostEqBandGain(9, highBoost * 0.8f) // 24kHz
-            setPostEqBandGain(10, highBoost)       // 32kHz
+            setPostEqBandGain(8, highBoost * 0.4f)  // 8kHz
+            setPostEqBandGain(9, highBoost * 0.8f)  // 12kHz
+            setPostEqBandGain(10, highBoost)        // 16kHz
             
+            // Настройка MBC с уникальными частотами для каждой полосы
             for (i in 0 until channelCount) {
-                // Настройка MBC для глубокого баса (первая полоса)
-                val mbcBand = DynamicsProcessing.MbcBand(
-                    true, 
-                    bandFrequencies[0], // Самый низ
-                    2f,  // knee
-                    60f, // release
-                    2.2f, // ratio (еще мягче)
-                    -18f, // threshold
-                    -10f, 
-                    0f, 
-                    1.0f + (boost * 0.8f), 
-                    boost * 1.5f, 
-                    boost * 2f
-                )
-                engine?.setMbcBandByChannelIndex(i, 0, mbcBand)
-                
-                for (bandIdx in 1 until bandFrequencies.size) {
-                    val neutralMbc = DynamicsProcessing.MbcBand(
-                        false, bandFrequencies[bandIdx], 5f, 50f, 1.0f, -24f, -10f, 0f, 1.0f, 0f, 0f
+                for (bandIdx in bandFrequencies.indices) {
+                    val isBassBand = bandIdx < 2
+                    val mbcBand = DynamicsProcessing.MbcBand(
+                        isBassBand, 
+                        bandFrequencies[bandIdx], 
+                        if (isBassBand) 15f else 50f,
+                        if (isBassBand) 120f else 100f,
+                        if (isBassBand) 2.5f else 1.0f,
+                        -24f, 
+                        2f, 
+                        -90f, 1.0f, 
+                        if (isBassBand) boost * 2.0f else 0f,
+                        if (isBassBand) boost * 1.5f else 0f
                     )
-                    engine?.setMbcBandByChannelIndex(i, bandIdx, neutralMbc)
+                    engine?.setMbcBandByChannelIndex(i, bandIdx, mbcBand)
                 }
             }
         }

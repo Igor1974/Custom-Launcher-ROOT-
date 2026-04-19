@@ -60,6 +60,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -112,6 +113,7 @@ import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.deepnight.launcher.visualizer.AudioVisualizerManager
 import com.deepnight.launcher.parser.TorrentNetworkClient
 import com.deepnight.launcher.ui.LauncherViewModel
 import com.deepnight.launcher.ui.theme.CustomLauncherRootTheme
@@ -131,10 +133,15 @@ val LocalIsHighRes = staticCompositionLocalOf { false }
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     private val launcherViewModel: LauncherViewModel by viewModels()
+    private val searchViewModel: SearchViewModel by viewModels()
+    private var visualizerManager: AudioVisualizerManager? = null
     private var isUiReady by mutableStateOf(false)
     private var shouldOpenSettingsTrigger by mutableStateOf(false)
+    private var shouldOpenAboutTrigger by mutableStateOf(false)
+    private var shouldRefreshWallpaperTrigger by mutableStateOf(false)
     private var shouldResetToHome by mutableStateOf(false)
     private var shouldStartVoiceSearchTrigger by mutableStateOf(false)
+    private var pendingVoiceSearchQuery by mutableStateOf<String?>(null)
     private var forceDismissScreensaver by mutableIntStateOf(0)
     private var updateInfo by mutableStateOf<AppUpdateManager.UpdateInfo?>(null)
     private var packageReceiver: PackageReceiver? = null
@@ -144,15 +151,94 @@ class MainActivity : ComponentActivity() {
         forceDismissScreensaver++
     }
 
+    @SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val keyCode = event.keyCode
+        val action = event.action
+
+        // Перехватываем кнопку поиска/микрофона
+        if (action == KeyEvent.ACTION_DOWN && (
+            keyCode == KeyEvent.KEYCODE_SEARCH || 
+            keyCode == KeyEvent.KEYCODE_VOICE_ASSIST || 
+            keyCode == KeyEvent.KEYCODE_ASSIST ||
+            keyCode == 174
+        )) {
+            Log.d("DeepNightKey", "Search/Voice key pressed, hijacking...")
+            
+            // Пытаемся закрыть системные окна, если они вылезли
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    Shell.cmd("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS").exec()
+                } catch (_: Exception) {}
+            }
+
+            shouldStartVoiceSearchTrigger = true
+            return true // Поглощаем событие
+        }
+
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun ensureNotificationPermission() {
+        val packageName = packageName
+        val serviceName = "$packageName/com.deepnight.launcher.visualizer.VisualizerNotificationService"
+        
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Проверяем, включен ли уже наш слушатель
+                val enabledListeners = android.provider.Settings.Secure.getString(
+                    contentResolver,
+                    "enabled_notification_listeners"
+                )
+                
+                if (enabledListeners == null || !enabledListeners.contains(serviceName)) {
+                    Log.d("MainActivity", "Attempting to auto-enable NotificationListener via Shell")
+                    
+                    val newList = if (enabledListeners.isNullOrBlank()) {
+                        serviceName
+                    } else {
+                        "$enabledListeners:$serviceName"
+                    }
+                    
+                    // Выполняем команду через libsu Shell
+                    // Если есть Root - сработает. Если нет - просто проигнорируется.
+                    Shell.cmd("settings put secure enabled_notification_listeners $newList").exec()
+                    
+                    withContext(Dispatchers.Main) {
+                        Log.i("MainActivity", "Notification Listener command executed")
+                    }
+                } else {
+                    Log.d("MainActivity", "NotificationListener already enabled")
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to auto-enable NotificationListener: ${e.message}")
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         packageReceiver?.let { unregisterReceiver(it) }
+        visualizerManager?.release()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        sendBroadcast(Intent("com.deepnight.launcher.ACTION_USER_ACTIVITY"))
+        Log.d("DeepNightKey", "KeyDown: $keyCode")
+        
+        // Коды кнопок поиска: SEARCH, ASSIST, VOICE_ASSIST и специфичные для TCL (219, 119, 85)
         if (keyCode == KeyEvent.KEYCODE_SEARCH ||
-            keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
-            keyCode == KeyEvent.KEYCODE_ASSIST) {
+                keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
+                keyCode == KeyEvent.KEYCODE_ASSIST || keyCode == 119 || keyCode == 85
+        ) {
+            
+            // ПРИНУДИТЕЛЬНО закрываем системные диалоги (включая TCL Assistant)
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    Shell.cmd("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS").exec()
+                } catch (_: Exception) {}
+            }
+
             shouldStartVoiceSearchTrigger = true
             return true
         }
@@ -162,6 +248,9 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Пытаемся автоматически разрешить доступ к уведомлениям для визуализатора
+        ensureNotificationPermission()
 
         packageReceiver = PackageReceiver {
             // Список приложений в AppRepository уже обновлен в ресивере,
@@ -208,37 +297,54 @@ class MainActivity : ComponentActivity() {
         coil.Coil.setImageLoader(imageLoader)
 
         lifecycleScope.launch {
+            // 1. Сразу проверяем Root и применяем базовые фиксы
+            withContext(Dispatchers.IO) {
+                try {
+                    Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
+                    if (Shell.getShell().isRoot) {
+                        // Если это первый запуск или мы не в системе - запускаем трансформацию
+                        if (!DeepNightOSManager.isAlreadyIntegrated()) {
+                            DeepNightOSManager.transformToDeepNightOS(this@MainActivity)
+                        } else {
+                            DeepNightOSManager.applyCriticalFixes(this@MainActivity)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Root init failed", e)
+                }
+            }
+
             repeatOnLifecycle(Lifecycle.State.CREATED) {
-                delay(300)
+                delay(100)
                 isUiReady = true
-
-                delay(1000)
-                withContext(Dispatchers.IO) {
-                    try {
-                        Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
-                        if (Shell.getShell().isRoot) {
-                            applySystemFixesWithRoot()
-                        }
-                    } catch (_: Exception) {}
                     
-                    // Мгновенно обновляем погоду при старте
-                    try { SystemInfoRepository.updateWeather(this@MainActivity) } catch (_: Exception) {}
+                // Мгновенно обновляем погоду при старте
+                try { SystemInfoRepository.updateWeather(this@MainActivity) } catch (_: Exception) {}
 
-                    // Автозапуск выбранного приложения
-                    AppRepository.getAutostartApp(this@MainActivity)?.let { pkg ->
-                        if (pkg.isNotEmpty() && pkg != packageName) {
-                            try {
-                                val launchIntent = packageManager.getLeanbackLaunchIntentForPackage(pkg)
-                                    ?: packageManager.getLaunchIntentForPackage(pkg)
-                                launchIntent?.let { startActivity(it) }
-                            } catch (_: Exception) {}
-                        }
+                // Автозапуск выбранного приложения
+                AppRepository.getAutostartApp(this@MainActivity)?.let { pkg ->
+                    if (pkg.isNotEmpty() && pkg != packageName) {
+                        try {
+                            val launchIntent = packageManager.getLeanbackLaunchIntentForPackage(pkg)
+                                ?: packageManager.getLaunchIntentForPackage(pkg)
+                            launchIntent?.let { startActivity(it) }
+                        } catch (_: Exception) {}
                     }
-                    
-                    val update = AppUpdateManager.checkForUpdates(this@MainActivity)
-                    if (update != null) {
-                        updateInfo = update
-                    }
+                }
+                
+                val update = AppUpdateManager.checkForUpdates(this@MainActivity)
+                if (update != null) {
+                    updateInfo = update
+                }
+            }
+                
+            // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА DEEP NIGHT OS
+            if (LauncherSettings.isVisualizerOverlayEnabled(this@MainActivity)) {
+                val visualizerIntent = Intent(this@MainActivity, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
+                try {
+                    startForegroundService(visualizerIntent)
+                } catch (_: Exception) {
+                    startService(visualizerIntent)
                 }
             }
         }
@@ -256,6 +362,7 @@ class MainActivity : ComponentActivity() {
                     var showAlarmSettings by remember { mutableStateOf(false) }
                     var showSearch by remember { mutableStateOf(false) }
                     var showAboutDialog by remember { mutableStateOf(false) }
+                    var showOsUpgrade by remember { mutableStateOf(false) }
                     var showRecents by remember { mutableStateOf(false) }
 
                     val context = LocalContext.current
@@ -334,8 +441,26 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(shouldStartVoiceSearchTrigger) {
                         if (shouldStartVoiceSearchTrigger) {
-                            showSearch = true
+                            if (showSearch) {
+                                sendBroadcast(Intent("com.deepnight.launcher.RESTART_VOICE_SEARCH"))
+                            } else {
+                                showSearch = true
+                            }
                             shouldStartVoiceSearchTrigger = false
+                        }
+                    }
+
+                    LaunchedEffect(shouldOpenAboutTrigger) {
+                        if (shouldOpenAboutTrigger) {
+                            showAboutDialog = true
+                            shouldOpenAboutTrigger = false
+                        }
+                    }
+
+                    LaunchedEffect(shouldRefreshWallpaperTrigger) {
+                        if (shouldRefreshWallpaperTrigger) {
+                            launcherViewModel.refreshWallpaper()
+                            shouldRefreshWallpaperTrigger = false
                         }
                     }
 
@@ -379,11 +504,23 @@ class MainActivity : ComponentActivity() {
                             .onPreviewKeyEvent {
                                 if (!showScreensaver) {
                                     lastInteractionTime = System.currentTimeMillis()
+                                    sendBroadcast(Intent("com.deepnight.launcher.ACTION_USER_ACTIVITY"))
                                 }
                                 false
                             }
                     ) {
-                        AiWallpaperBackground(currentUrl = wallpaperUrl)
+                        val spectrum by (visualizerManager?.spectrum?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(FloatArray(64)) })
+                        val bass by (visualizerManager?.bassLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
+                        val mid by (visualizerManager?.midLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
+                        val high by (visualizerManager?.highLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
+
+                        AiWallpaperBackground(
+                            currentUrl = wallpaperUrl,
+                            bassBoost = bass,
+                            midBoost = mid,
+                            highBoost = high,
+                            spectrum = spectrum
+                        )
 
                         Surface(
                             modifier = Modifier
@@ -448,6 +585,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onOpenOsUpgrade = { showOsUpgrade = true },
                                 onRefreshWallpaper = {
                                     launcherViewModel.refreshWallpaper()
                                     showSettings = false
@@ -492,7 +630,14 @@ class MainActivity : ComponentActivity() {
 
                         if (showSearch) {
                             BackHandler { showSearch = false }
-                            SearchOverlay(onDismiss = { showSearch = false })
+                            SearchOverlay(
+                                viewModel = searchViewModel,
+                                initialQuery = pendingVoiceSearchQuery,
+                                onDismiss = { 
+                                    showSearch = false
+                                    pendingVoiceSearchQuery = null
+                                }
+                            )
                         }
 
                         if (showRecents) {
@@ -518,6 +663,11 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        if (showOsUpgrade) {
+                            BackHandler { showOsUpgrade = false }
+                            OsUpgradeDialog(onDismiss = { showOsUpgrade = false })
+                        }
+
                         updateInfo?.let { update ->
                             UpdateDialog(
                                 update = update,
@@ -537,37 +687,22 @@ class MainActivity : ComponentActivity() {
         handleIntents(intent)
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleIntents(intent)
-        
-        // Если пришел интент ассистента или поиска - открываем наш голос
-        if (intent.action == Intent.ACTION_ASSIST || 
-            intent.action == Intent.ACTION_VOICE_COMMAND ||
-            intent.action == Intent.ACTION_SEARCH) {
-            shouldStartVoiceSearchTrigger = true
-        }
-    }
-
-    override fun onSearchRequested(): Boolean {
-        shouldStartVoiceSearchTrigger = true
-        return true
-    }
-
-    private fun handleIntents(intent: Intent?) {
-        if (intent == null) return
-        if (intent.hasCategory(Intent.CATEGORY_HOME) || intent.action == Intent.ACTION_MAIN) {
-            shouldResetToHome = true
-        }
-        if (intent.getBooleanExtra("OPEN_SETTINGS", false) || intent.action == "com.deepnight.launcher.OPEN_SETTINGS") {
-            shouldOpenSettingsTrigger = true
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         isUiReady = true
+        
+        // Когда мы возвращаемся в лаунчер - видео (если было) точно остановлено
+        sendBroadcast(Intent("com.deepnight.launcher.VIDEO_STOPPED"))
+        
+        // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА
+        Log.d("DeepNight", "MainActivity onResume - FORCING VISUALIZER START")
+        val visualizerIntent = Intent(this, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
+        try {
+            startForegroundService(visualizerIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         lifecycleScope.launch {
             delay(3000)
             if (!android.provider.Settings.canDrawOverlays(this@MainActivity)) {
@@ -580,6 +715,78 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        // Мгновенная реакция на интент ассистента
+        handleIntents(intent)
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    override fun onSearchRequested(): Boolean {
+        shouldStartVoiceSearchTrigger = true
+        return true
+    }
+
+    private fun handleIntents(intent: Intent?) {
+        if (intent == null) return
+        val action = intent.action
+        Log.d("DeepNightIntent", "Received intent: action=$action, data=${intent.dataString}")
+        
+        // Логика перехвата поиска от всех возможных ассистентов
+        val isSearchAction = action == Intent.ACTION_SEARCH ||
+                action == "android.intent.action.VOICE_SEARCH_RESULTS" ||
+                action == Intent.ACTION_ASSIST ||
+                action == Intent.ACTION_VOICE_COMMAND ||
+                action == "android.intent.action.VOICE_ASSIST" ||
+                action == "com.tcl.assistant.VOICE_SEARCH" ||
+                action == "com.tcl.voice.SEARCH" ||
+                action == "com.deepnight.launcher.VOICE_SEARCH_TRIGGER" ||
+                action == "com.google.android.gms.actions.SEARCH_ACTION" ||
+                action == "android.search.action.GLOBAL_SEARCH"
+
+        if (isSearchAction || intent.hasExtra("query") || intent.hasExtra("voice_search_query") || intent.hasExtra("key_word")) {
+            val query = intent.getStringExtra(android.app.SearchManager.QUERY)
+                ?: intent.getStringExtra("query")
+                ?: intent.getStringExtra("voice_search_query")
+                ?: intent.getStringExtra("key_word")
+                ?: intent.getStringExtra("android.intent.extra.TEXT")
+                ?: intent.dataString
+            
+            Log.d("DeepNightIntent", "Extracted query: $query")
+
+            // ПРИНУДИТЕЛЬНО закрываем системные диалоги (включая ассистента),
+            // чтобы наш оверлей был виден. Используем Shell так как это надежнее на Android 12+
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    Shell.cmd("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS").exec()
+                } catch (_: Exception) {}
+            }
+
+            // Сбрасываем текущее состояние поиска, чтобы он открылся заново
+            shouldStartVoiceSearchTrigger = false 
+            pendingVoiceSearchQuery = query
+            
+            // Используем delay через lifecycleScope, чтобы Compose успел заметить сброс
+            lifecycleScope.launch {
+                delay(10)
+                shouldStartVoiceSearchTrigger = true
+            }
+        }
+
+        if (intent.hasCategory(Intent.CATEGORY_HOME) || intent.action == Intent.ACTION_MAIN) {
+            shouldResetToHome = true
+        }
+        if (intent.getBooleanExtra("OPEN_SETTINGS", false) || intent.action == "com.deepnight.launcher.OPEN_SETTINGS") {
+            shouldOpenSettingsTrigger = true
+        }
+        if (intent.action == "com.deepnight.launcher.OPEN_ABOUT") {
+            shouldOpenAboutTrigger = true
+        }
+        if (intent.action == "com.deepnight.launcher.REFRESH_WALLPAPER") {
+            shouldRefreshWallpaperTrigger = true
+        }
+    }
+
     fun is4KSupported(context: Context): Boolean {
         val displayManager = context.getSystemService(DISPLAY_SERVICE) as DisplayManager
         val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
@@ -589,7 +796,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AiWallpaperBackground(
         currentUrl: String,
-        targetOffset: Offset = Offset.Zero
+        targetOffset: Offset = Offset.Zero,
+        bassBoost: Float = 0f,
+        midBoost: Float = 0f,
+        highBoost: Float = 0f,
+        spectrum: FloatArray = FloatArray(0)
     ) {
         val context = LocalContext.current
         val isHighRes = LocalIsHighRes.current
@@ -603,6 +814,24 @@ class MainActivity : ComponentActivity() {
             label = "parallax"
         )
 
+        val animatedBass by animateFloatAsState(
+            targetValue = 1f + (bassBoost * 0.12f),
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            label = "bass_pulse"
+        )
+
+        val animatedMidOffset by animateFloatAsState(
+            targetValue = midBoost * 15f,
+            animationSpec = spring(stiffness = Spring.StiffnessLow),
+            label = "mid_float"
+        )
+
+        val animatedGlowAlpha by animateFloatAsState(
+            targetValue = 0.2f + (highBoost * 0.5f),
+            animationSpec = tween(150),
+            label = "high_glow"
+        )
+
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             if (currentUrl.isNotEmpty()) {
                 AsyncImage(
@@ -611,7 +840,7 @@ class MainActivity : ComponentActivity() {
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .data(currentUrl)
-                            .crossfade(false) // ТВ плохо переносит crossfade
+                            .crossfade(false)
                             .size(if (isHighRes) 3840 else 1920, if (isHighRes) 2160 else 1080)
                             .allowHardware(true)
                             .build()
@@ -621,16 +850,70 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            translationX = animatedOffset.x
-                            translationY = animatedOffset.y
+                            translationX = animatedOffset.x + animatedMidOffset
+                            translationY = animatedOffset.y + (animatedMidOffset * 0.5f)
                             val dist = animatedOffset.getDistance()
                             val extraScale = dist / 2000f
                             val baseScale = 1.25f
-                            scaleX = baseScale + extraScale
-                            scaleY = baseScale + extraScale
+                            scaleX = (baseScale + extraScale) * animatedBass
+                            scaleY = (baseScale + extraScale) * animatedBass
                         }
                 )
             }
+
+            // Слой пульсирующего неонового свечения (реагирует на весь спектр Spectralizer)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = animatedGlowAlpha }
+                    .drawBehind {
+                        if (spectrum.size >= 64) {
+                            // Оптимизация: используем 16 зон вместо 64 для фонового свечения
+                            val zones = 16
+                            val zoneWidth = size.width / zones
+                            for (i in 0 until zones) {
+                                // Берем максимум из 4 соседних полос для каждой зоны
+                                var zoneMagnitude = 0f
+                                for (j in 0 until 4) {
+                                    zoneMagnitude = maxOf(zoneMagnitude, spectrum[i * 4 + j])
+                                }
+
+                                if (zoneMagnitude > 0.15f) {
+                                    val x = i * zoneWidth + zoneWidth / 2
+                                    val color = androidx.compose.ui.graphics.lerp(
+                                        Color(0xFFFF00E5), // Magenta (НЧ)
+                                        Color(0xFF00E5FF), // Cyan (ВЧ)
+                                        i.toFloat() / zones
+                                    )
+                                    
+                                    // Рисуем свечение зоны. Используем pre-calculated значения где возможно.
+                                    drawCircle(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(color.copy(alpha = 0.12f * zoneMagnitude), Color.Transparent),
+                                            center = Offset(x, size.height),
+                                            radius = zoneWidth * 8 * zoneMagnitude
+                                        ),
+                                        center = Offset(x, size.height),
+                                        radius = zoneWidth * 8 * zoneMagnitude
+                                    )
+                                }
+                            }
+                        } else {
+                            // Fallback на старое свечение
+                            drawRect(
+                                brush = Brush.radialGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Cyan.copy(alpha = 0.1f * highBoost),
+                                        0.7f to Color.Transparent,
+                                        1.0f to Color.Magenta.copy(alpha = 0.05f * highBoost)
+                                    ),
+                                    center = center,
+                                    radius = size.width
+                                )
+                            )
+                        }
+                    }
+            )
 
             Box(
                 modifier = Modifier
@@ -646,7 +929,7 @@ class MainActivity : ComponentActivity() {
                             brush = Brush.radialGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Transparent,
-                                    0.4f to Color.Black.copy(alpha = 0.3f),
+                                    0.4f to Color.Black.copy(alpha = 0.3f + (bassBoost * 0.1f)),
                                     1.0f to Color.Black.copy(alpha = 0.95f)
                                 ),
                                 center = center,
@@ -659,41 +942,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applySystemFixesWithRoot() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val serviceId = "$packageName/.HomeInterceptorService"
-                Shell.cmd(
-                    "appops set $packageName SYSTEM_ALERT_WINDOW allow",
-                    "pm grant $packageName android.permission.POST_NOTIFICATIONS",
-                    "pm grant $packageName android.permission.RECORD_AUDIO",
-                    "settings put secure assistant com.deepnight.launcher/.MainActivity",
-                    "settings put secure voice_interaction_service com.deepnight.launcher/.MainActivity",
-                    "settings put global transition_animation_scale 0.5",
-                    "settings put global window_animation_scale 0.5",
-                    "settings put global animator_duration_scale 0.5",
-                    "settings put secure enabled_accessibility_services $serviceId",
-                    "settings put secure accessibility_enabled 1",
-                    "cmd package set-home-app $packageName/.MainActivity",
-                    "settings put secure assistant $packageName/.HomeInterceptorService",
-                    "settings put secure preferred_launcher com.deepnight.launcher/.MainActivity",
-                    "settings put secure last_setup_shown 1",
-                    "settings put secure user_setup_complete 1",
-                    "settings put global device_provisioned 1",
-                    "settings put secure install_non_market_apps 1",
-                    "am set-standby-bucket com.deepnight.launcher active",
-                    "settings put global sys_storage_threshold_percentage 5",
-                    "dumpsys deviceidle whitelist +$packageName",
-                    "pm set-home-app $packageName/.MainActivity",
-                    "dumpsys alarm whitelist +$packageName",
-                    "pm disable com.google.android.tvlauncher",
-                    "pm disable com.google.android.leanbacklauncher",
-                    "pm disable com.tcl.partnercustomizer",
-                    "pm disable com.google.android.leanbacklauncher.recommendations",
-                    "pm disable com.google.android.tvrecommendations",
-                    "settings put secure enabled_accessibility_services $serviceId",
-                    "settings put secure accessibility_enabled 1"
-                ).exec()
-            } catch (_: Exception) {}
+        lifecycleScope.launch {
+            DeepNightOSManager.applyCriticalFixes(this@MainActivity)
         }
     }
 
