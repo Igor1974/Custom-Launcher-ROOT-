@@ -27,17 +27,19 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 # 3. Список изменений
-CHANGELOG_TEXT="Deep Night OS: Глубокая интеграция в систему, захват Home-кнопки и статуса Ассистента.
-Voice Search Fix: Исправлен конфликт с TCL MicManager, восстановлен системный голос.
-Search Hijack: Полный перехват аппаратной кнопки микрофона для внутреннего поиска.
-Performance: Устранены лаги UI при распознавании речи, оптимизирована рекомпозиция.
-Root OS Manager: Автоматическая настройка прав и отключение bloatware при первом запуске."
+CHANGELOG_TEXT="DeepNight Radio: Встроенный полнофункциональный радио-плеер с поддержкой визуализации.
+Radio Refinement: Минималистичный текстовый дизайн, удалены иконки для экономии места.
+Radio Quality: Станции с высоким качеством теперь всегда в начале списка.
+Radio Buffering: Значительно увеличен буфер предзагрузки для стабильного воспроизведения на медленном интернете.
+Weather Accuracy: Реализовано получение реальных координат через LocationManager (GPS/Network) для точного прогноза погоды.
+Boot Priority: Добавлена поддержка Direct Boot для более быстрого перехвата управления при старте ТВ.
+UI Performance: Оптимизирована прокрутка списков и уменьшена задержка отрисовки."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 
 if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
-    echo -e "${RED}Ошибка: APK не найден!${NC}"
+    echo -e "${RED}Ошибка: APK не найден! Сначала выполните: ./gradlew assembleRelease${NC}"
     exit 1
 fi
 
@@ -70,10 +72,11 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -f "$UPDATE_JSON" app/build.gradle.kts release.sh \
+    app/proguard-rules.pro \
+    app/src/main/AndroidManifest.xml \
     app/src/main/java/com/deepnight/launcher/MainActivity.kt \
-    app/src/main/java/com/deepnight/launcher/AppUpdateManager.kt \
-    app/src/main/java/com/deepnight/launcher/SettingsOverlay.kt \
-    app/src/main/java/com/deepnight/launcher/dsp/DeepNightDSP.kt
+    app/src/main/java/com/deepnight/launcher/SystemInfoRepository.kt \
+    app/src/main/java/com/deepnight/launcher/radio/RadioScreen.kt
 git commit -m "Release v$VERSION_NAME ($VERSION_CODE)"
 git push origin main --force
 

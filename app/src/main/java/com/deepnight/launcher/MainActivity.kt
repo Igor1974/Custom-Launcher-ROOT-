@@ -53,9 +53,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Speed
+import com.deepnight.launcher.radio.RadioManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -158,13 +160,13 @@ class MainActivity : ComponentActivity() {
 
         // Перехватываем кнопку поиска/микрофона
         if (action == KeyEvent.ACTION_DOWN && (
-            keyCode == KeyEvent.KEYCODE_SEARCH || 
-            keyCode == KeyEvent.KEYCODE_VOICE_ASSIST || 
+            keyCode == KeyEvent.KEYCODE_SEARCH ||
+            keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
             keyCode == KeyEvent.KEYCODE_ASSIST ||
             keyCode == 174
         )) {
             Log.d("DeepNightKey", "Search/Voice key pressed, hijacking...")
-            
+
             // Пытаемся закрыть системные окна, если они вылезли
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -182,7 +184,7 @@ class MainActivity : ComponentActivity() {
     private fun ensureNotificationPermission() {
         val packageName = packageName
         val serviceName = "$packageName/com.deepnight.launcher.visualizer.VisualizerNotificationService"
-        
+
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Проверяем, включен ли уже наш слушатель
@@ -190,20 +192,20 @@ class MainActivity : ComponentActivity() {
                     contentResolver,
                     "enabled_notification_listeners"
                 )
-                
+
                 if (enabledListeners == null || !enabledListeners.contains(serviceName)) {
                     Log.d("MainActivity", "Attempting to auto-enable NotificationListener via Shell")
-                    
+
                     val newList = if (enabledListeners.isNullOrBlank()) {
                         serviceName
                     } else {
                         "$enabledListeners:$serviceName"
                     }
-                    
+
                     // Выполняем команду через libsu Shell
                     // Если есть Root - сработает. Если нет - просто проигнорируется.
                     Shell.cmd("settings put secure enabled_notification_listeners $newList").exec()
-                    
+
                     withContext(Dispatchers.Main) {
                         Log.i("MainActivity", "Notification Listener command executed")
                     }
@@ -220,18 +222,19 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         packageReceiver?.let { unregisterReceiver(it) }
         visualizerManager?.release()
+        RadioManager.stop(this)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         sendBroadcast(Intent("com.deepnight.launcher.ACTION_USER_ACTIVITY"))
         Log.d("DeepNightKey", "KeyDown: $keyCode")
-        
+
         // Коды кнопок поиска: SEARCH, ASSIST, VOICE_ASSIST и специфичные для TCL (219, 119, 85)
         if (keyCode == KeyEvent.KEYCODE_SEARCH ||
                 keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
                 keyCode == KeyEvent.KEYCODE_ASSIST || keyCode == 119 || keyCode == 85
         ) {
-            
+
             // ПРИНУДИТЕЛЬНО закрываем системные диалоги (включая TCL Assistant)
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -272,7 +275,7 @@ class MainActivity : ComponentActivity() {
         // Оптимизированный клиент для Coil: разумные таймауты вместо бесконечных, чтобы избежать зависания сети
         val posterHttpClient = okhttp3.OkHttpClient.Builder()
             .dns(TorrentNetworkClient.client.dns)
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS) 
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
             .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
@@ -317,7 +320,7 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 delay(100)
                 isUiReady = true
-                    
+
                 // Мгновенно обновляем погоду при старте
                 try { SystemInfoRepository.updateWeather(this@MainActivity) } catch (_: Exception) {}
 
@@ -331,13 +334,13 @@ class MainActivity : ComponentActivity() {
                         } catch (_: Exception) {}
                     }
                 }
-                
+
                 val update = AppUpdateManager.checkForUpdates(this@MainActivity)
                 if (update != null) {
                     updateInfo = update
                 }
             }
-                
+
             // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА DEEP NIGHT OS
             if (LauncherSettings.isVisualizerOverlayEnabled(this@MainActivity)) {
                 val visualizerIntent = Intent(this@MainActivity, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
@@ -389,15 +392,15 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         val folder = File(context.getExternalFilesDir(null), "Aerial")
                                         if (!folder.exists()) folder.mkdirs()
-                                        
+
                                         // Очищаем старые видео перед добавлением нового
                                         folder.listFiles()?.forEach { it.delete() }
-                                        
+
                                         val file = File(folder, "screensaver_video.mp4")
                                         context.contentResolver.openInputStream(selectedUri)?.use { input ->
                                             file.outputStream().use { output -> input.copyTo(output) }
                                         }
-                                        
+
                                         withContext(Dispatchers.Main) {
                                             LauncherSettings.setScreensaverEnabled(context, true)
                                             LauncherSettings.setScreensaverType(context, "AERIAL")
@@ -457,6 +460,39 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    var showRadio by remember { mutableStateOf(false) }
+                    
+                    // Глобальный визуализатор для радио
+                    var radioVisualizerSession by remember { mutableIntStateOf(0) }
+                    var radioVisualizerManager by remember { mutableStateOf<AudioVisualizerManager?>(null) }
+
+                    LaunchedEffect(Unit) {
+                        val filter = IntentFilter()
+                        filter.addAction("com.deepnight.launcher.OPEN_RADIO")
+                        filter.addAction("com.deepnight.launcher.AUDIO_SESSION_CHANGE")
+                        
+                        val receiver = object : android.content.BroadcastReceiver() {
+                            override fun onReceive(context: Context?, intent: Intent?) {
+                                when (intent?.action) {
+                                    "com.deepnight.launcher.OPEN_RADIO" -> showRadio = true
+                                    "com.deepnight.launcher.AUDIO_SESSION_CHANGE" -> {
+                                        val sid = intent.getIntExtra("session_id", 0)
+                                        if (sid > 0 && sid != radioVisualizerSession) {
+                                            radioVisualizerSession = sid
+                                            radioVisualizerManager?.release()
+                                            radioVisualizerManager = AudioVisualizerManager(sid)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            registerReceiver(receiver, filter, RECEIVER_EXPORTED)
+                        } else {
+                            registerReceiver(receiver, filter)
+                        }
+                    }
+
                     LaunchedEffect(shouldRefreshWallpaperTrigger) {
                         if (shouldRefreshWallpaperTrigger) {
                             launcherViewModel.refreshWallpaper()
@@ -509,10 +545,18 @@ class MainActivity : ComponentActivity() {
                                 false
                             }
                     ) {
-                        val spectrum by (visualizerManager?.spectrum?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(FloatArray(64)) })
-                        val bass by (visualizerManager?.bassLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
-                        val mid by (visualizerManager?.midLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
-                        val high by (visualizerManager?.highLevel?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) })
+                        val isPlaying by RadioManager.isPlaying
+                        val spectrum by (if (isPlaying) radioVisualizerManager?.spectrum else visualizerManager?.spectrum)
+                            ?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(FloatArray(64)) }
+
+                        val bass by (if (isPlaying) radioVisualizerManager?.bassLevel else visualizerManager?.bassLevel)
+                            ?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) }
+
+                        val mid by (if (isPlaying) radioVisualizerManager?.midLevel else visualizerManager?.midLevel)
+                            ?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) }
+
+                        val high by (if (isPlaying) radioVisualizerManager?.highLevel else visualizerManager?.highLevel)
+                            ?.collectAsStateWithLifecycle() ?: remember { mutableFloatStateOf(0f) }
 
                         AiWallpaperBackground(
                             currentUrl = wallpaperUrl,
@@ -551,7 +595,9 @@ class MainActivity : ComponentActivity() {
                                 onShowAboutDialogChange = { showAboutDialog = it },
                                 showRecents = showRecents,
                                 onShowRecentsChange = { showRecents = it },
-                                isAnyOverlayOpen = selectedAppForMenu != null || showSettings || showAlarmSettings || showSearch || showAboutDialog || showRecents,
+                                showRadio = showRadio,
+                                onShowRadioChange = { showRadio = it },
+                                isAnyOverlayOpen = selectedAppForMenu != null || showSettings || showAlarmSettings || showSearch || showAboutDialog || showRecents || showRadio,
                                 showScreensaver = showScreensaver,
                                 isScreensaverClosing = isScreensaverClosing,
                                 onScreensaverDismiss = {
@@ -633,7 +679,7 @@ class MainActivity : ComponentActivity() {
                             SearchOverlay(
                                 viewModel = searchViewModel,
                                 initialQuery = pendingVoiceSearchQuery,
-                                onDismiss = { 
+                                onDismiss = {
                                     showSearch = false
                                     pendingVoiceSearchQuery = null
                                 }
@@ -643,6 +689,12 @@ class MainActivity : ComponentActivity() {
                         if (showRecents) {
                             BackHandler { showRecents = false }
                             RecentAppsOverlay(onDismiss = { showRecents = false })
+                        }
+
+                        // Добавляем экран Радио
+                        if (showRadio) {
+                            BackHandler { showRadio = false }
+                            com.deepnight.launcher.radio.RadioScreen(onClose = { showRadio = false })
                         }
 
                         if (showAboutDialog) {
@@ -690,10 +742,10 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         isUiReady = true
-        
+
         // Когда мы возвращаемся в лаунчер - видео (если было) точно остановлено
         sendBroadcast(Intent("com.deepnight.launcher.VIDEO_STOPPED"))
-        
+
         // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА
         Log.d("DeepNight", "MainActivity onResume - FORCING VISUALIZER START")
         val visualizerIntent = Intent(this, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
@@ -731,7 +783,7 @@ class MainActivity : ComponentActivity() {
         if (intent == null) return
         val action = intent.action
         Log.d("DeepNightIntent", "Received intent: action=$action, data=${intent.dataString}")
-        
+
         // Логика перехвата поиска от всех возможных ассистентов
         val isSearchAction = action == Intent.ACTION_SEARCH ||
                 action == "android.intent.action.VOICE_SEARCH_RESULTS" ||
@@ -751,7 +803,7 @@ class MainActivity : ComponentActivity() {
                 ?: intent.getStringExtra("key_word")
                 ?: intent.getStringExtra("android.intent.extra.TEXT")
                 ?: intent.dataString
-            
+
             Log.d("DeepNightIntent", "Extracted query: $query")
 
             // ПРИНУДИТЕЛЬНО закрываем системные диалоги (включая ассистента),
@@ -763,9 +815,9 @@ class MainActivity : ComponentActivity() {
             }
 
             // Сбрасываем текущее состояние поиска, чтобы он открылся заново
-            shouldStartVoiceSearchTrigger = false 
+            shouldStartVoiceSearchTrigger = false
             pendingVoiceSearchQuery = query
-            
+
             // Используем delay через lifecycleScope, чтобы Compose успел заметить сброс
             lifecycleScope.launch {
                 delay(10)
@@ -885,7 +937,7 @@ class MainActivity : ComponentActivity() {
                                         Color(0xFF00E5FF), // Cyan (ВЧ)
                                         i.toFloat() / zones
                                     )
-                                    
+
                                     // Рисуем свечение зоны. Используем pre-calculated значения где возможно.
                                     drawCircle(
                                         brush = Brush.radialGradient(
@@ -963,6 +1015,8 @@ class MainActivity : ComponentActivity() {
         onShowAboutDialogChange: (Boolean) -> Unit,
         showRecents: Boolean,
         onShowRecentsChange: (Boolean) -> Unit,
+        showRadio: Boolean,
+        onShowRadioChange: (Boolean) -> Unit,
         isAnyOverlayOpen: Boolean,
         showScreensaver: Boolean,
         isScreensaverClosing: Boolean,
@@ -996,7 +1050,7 @@ class MainActivity : ComponentActivity() {
                 var counter = 0
                 while (true) {
                     currentTime = timeFormatter.format(Date())
-                    
+
                     // Обновляем статы каждые 15 секунд (30 * 500ms)
                     if (counter % 30 == 0) {
                         val freshStats = withContext(Dispatchers.IO) {
@@ -1004,7 +1058,7 @@ class MainActivity : ComponentActivity() {
                         }
                         stats = freshStats
                     }
-                    
+
                     // Обновляем погоду каждые 30 минут
                     if (counter % 3600 == 0) {
                         withContext(Dispatchers.IO) {
@@ -1093,6 +1147,7 @@ class MainActivity : ComponentActivity() {
                     showSearch = showSearch,
                     onUpdateStats = { stats = it },
                     onOpenSearch = { onShowSearchChange(true) },
+                    onOpenRadio = { onShowRadioChange(true) },
                     onOpenSettings = onOpenSettings,
                     onOpenInfo = { onShowAboutDialogChange(true) },
                     isEnabled = !isAnyGlobalOverlayOpen
@@ -1127,8 +1182,8 @@ class MainActivity : ComponentActivity() {
 
             if (showScreensaver && lifecycleState == Lifecycle.State.RESUMED) {
                 val saverType = LauncherSettings.getScreensaverType(context)
-                val prefer4K = true 
-                
+                val prefer4K = true
+
                 // "AERIAL" и "LOCAL" используют один и тот же движок (ExoPlayer)
                 if (saverType == "AERIAL" || saverType == "LOCAL") {
                     AerialDreamScreensaver(
@@ -1159,6 +1214,7 @@ class MainActivity : ComponentActivity() {
         showSearch: Boolean,
         onUpdateStats: (SystemStats) -> Unit,
         onOpenSearch: () -> Unit,
+        onOpenRadio: () -> Unit,
         onOpenSettings: () -> Unit,
         onOpenInfo: () -> Unit,
         isEnabled: Boolean = true
@@ -1167,6 +1223,8 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         var isBoosting by remember { mutableStateOf(false) }
         val neonCyan = Color(0xFF00E5FF)
+
+        val isPlaying by RadioManager.isPlaying
 
         val baseTextStyle = androidx.compose.ui.text.TextStyle(
             color = Color.White,
@@ -1423,18 +1481,30 @@ class MainActivity : ComponentActivity() {
                 items = apps,
                 key = { _, app -> app.packageName }
             ) { _, app ->
-                AppGridItem(
-                    app = app,
-                    iconSize = iconSize,
-                    showNames = showNames,
-                    isMoving = app.packageName == movingApp?.packageName,
-                    spanCount = estimatedSpanCount,
-                    onLongClick = { if (movingApp == null) onAppMenuChange(it) },
-                    onExitMovingMode = { onMovingAppChange(null) },
-                    onGenParticles = onGenParticles,
-                    movingApp = movingApp,
-                    isEnabled = isEnabled
-                )
+                if (app.packageName == "com.deepnight.launcher.radio") {
+                    com.deepnight.launcher.radio.RadioCard(
+                        stationName = "Радио",
+                        onClick = {
+                            val intent = Intent("com.deepnight.launcher.OPEN_RADIO")
+                            intent.setPackage(packageName)
+                            sendBroadcast(intent)
+                        },
+                        modifier = Modifier.size(iconSize.dp)
+                    )
+                } else {
+                    AppGridItem(
+                        app = app,
+                        iconSize = iconSize,
+                        showNames = showNames,
+                        isMoving = app.packageName == movingApp?.packageName,
+                        spanCount = estimatedSpanCount,
+                        onLongClick = { if (movingApp == null) onAppMenuChange(it) },
+                        onExitMovingMode = { onMovingAppChange(null) },
+                        onGenParticles = onGenParticles,
+                        movingApp = movingApp,
+                        isEnabled = isEnabled
+                    )
+                }
             }
         }
     }

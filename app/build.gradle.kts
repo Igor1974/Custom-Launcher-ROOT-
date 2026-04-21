@@ -18,15 +18,15 @@ if (localPropertiesFile.exists()) {
 
 val replicateToken: String = localProperties.getProperty("REPLICATE_API_TOKEN") ?: ""
 
-val appVersionName = "5.1.0"
-val appVersionCode = 613
+val appVersionName = "5.2.0"
+val appVersionCode = 614
 
 base {
     archivesName.set("DeepNight_Launcher_v$appVersionName")
 }
 android {
     namespace = "com.deepnight.launcher"
-    compileSdk = 36
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -40,7 +40,7 @@ android {
     defaultConfig {
         applicationId = "com.deepnight.launcher"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = appVersionCode
         versionName = appVersionName
 
@@ -73,10 +73,15 @@ android {
         compose = true
         buildConfig = true
         resValues = false
+        viewBinding = true
     }
 
     buildToolsVersion = "36.0.0"
     ndkVersion = "27.0.12077973"
+    dependenciesInfo {
+        includeInApk = true
+        includeInBundle = true
+    }
 }
 
 kotlin {
@@ -129,7 +134,12 @@ dependencies {
     implementation(libs.androidx.media3.dash)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.datasource.okhttp)
+    
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
     
     // OpenVPN dependencies
     implementation(libs.spongycastle.core)

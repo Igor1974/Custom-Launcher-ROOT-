@@ -1,6 +1,6 @@
 {
-    "versionCode": 613,
-    "versionName": "5.1.0",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.1.0/DeepNight_Launcher_v5.1.0-release.apk",
-    "changelog": "Deep Night OS: Глубокая интеграция в систему, захват Home-кнопки и статуса Ассистента.\nVoice Search Fix: Исправлен конфликт с TCL MicManager, восстановлен системный голос.\nSearch Hijack: Полный перехват аппаратной кнопки микрофона для внутреннего поиска.\nPerformance: Устранены лаги UI при распознавании речи, оптимизирована рекомпозиция.\nRoot OS Manager: Автоматическая настройка прав и отключение bloatware при первом запуске."
+    "versionCode": 614,
+    "versionName": "5.2.0",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.0/DeepNight_Launcher_v5.2.0-release.apk",
+    "changelog": "DeepNight Radio: Встроенный полнофункциональный радио-плеер с поддержкой визуализации.\nRadio Refinement: Минималистичный текстовый дизайн, удалены иконки для экономии места.\nRadio Quality: Станции с высоким качеством теперь всегда в начале списка.\nRadio Buffering: Значительно увеличен буфер предзагрузки для стабильного воспроизведения на медленном интернете.\nWeather Accuracy: Реализовано получение реальных координат через LocationManager (GPS/Network) для точного прогноза погоды.\nBoot Priority: Добавлена поддержка Direct Boot для более быстрого перехвата управления при старте ТВ.\nUI Performance: Оптимизирована прокрутка списков и уменьшена задержка отрисовки."
 }
