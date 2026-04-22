@@ -195,11 +195,13 @@ object AppUpdateManager {
                 Toast.makeText(context, "Установка обновления (Root)...", Toast.LENGTH_LONG).show()
             }
             val result = withContext(Dispatchers.IO) {
-                // Добавляем -r (reinstall), -d (downgrade), -g (grant permissions)
-                // Важно: на некоторых прошивках нужно сначала сделать chmod
+                val tmpPath = "/data/local/tmp/update.apk"
+                // Копируем файл в /data/local/tmp, выставляем права и устанавливаем
                 com.topjohnwu.superuser.Shell.cmd(
-                    "chmod 666 ${file.absolutePath}",
-                    "pm install -r -d -g ${file.absolutePath}"
+                    "cp ${file.absolutePath} $tmpPath",
+                    "chmod 666 $tmpPath",
+                    "pm install -r -d -g $tmpPath",
+                    "rm $tmpPath"
                 ).exec()
             }
             
