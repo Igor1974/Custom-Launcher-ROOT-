@@ -69,14 +69,9 @@ with open('$UPDATE_JSON', 'w') as f:
 
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
-git add -f "$UPDATE_JSON" app/build.gradle.kts release.sh \
-    app/proguard-rules.pro \
-    app/src/main/AndroidManifest.xml \
-    app/src/main/java/com/deepnight/launcher/*.kt \
-    app/src/main/java/com/deepnight/launcher/radio/*.kt \
-    app/src/main/java/com/deepnight/launcher/visualizer/*.kt \
-    app/src/main/java/de/blinkt/openvpn/core/OpenVPNService.java
-git commit -m "Release v$VERSION_NAME ($VERSION_CODE) - Visualizer optimization & Root fix"
+# Добавляем только необходимые для работы обновлений файлы
+git add "$UPDATE_JSON" release.sh
+git commit -m "Update release info v$VERSION_NAME ($VERSION_CODE)"
 git push origin main --force
 
 # 7. Создание релиза на GitHub
