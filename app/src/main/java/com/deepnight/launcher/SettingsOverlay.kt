@@ -474,12 +474,6 @@ fun SettingsOverlay(
                                     onInteraction()
                                     isVisualizerEnabled = !isVisualizerEnabled
                                     LauncherSettings.setVisualizerOverlayEnabled(context, isVisualizerEnabled)
-                                    val intent = android.content.Intent(context, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
-                                    if (isVisualizerEnabled) {
-                                        context.startService(intent)
-                                    } else {
-                                        context.stopService(intent)
-                                    }
                                 }
                             )
 

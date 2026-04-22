@@ -72,12 +72,11 @@ echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -f "$UPDATE_JSON" app/build.gradle.kts release.sh \
     app/proguard-rules.pro \
     app/src/main/AndroidManifest.xml \
-    app/src/main/java/com/deepnight/launcher/MainActivity.kt \
-    app/src/main/java/com/deepnight/launcher/AppUpdateManager.kt \
-    app/src/main/java/com/deepnight/launcher/UpdateDialog.kt \
-    app/src/main/java/com/deepnight/launcher/SystemInfoRepository.kt \
-    app/src/main/java/com/deepnight/launcher/radio/RadioScreen.kt
-git commit -m "Release v$VERSION_NAME ($VERSION_CODE)"
+    app/src/main/java/com/deepnight/launcher/*.kt \
+    app/src/main/java/com/deepnight/launcher/radio/*.kt \
+    app/src/main/java/com/deepnight/launcher/visualizer/*.kt \
+    app/src/main/java/de/blinkt/openvpn/core/OpenVPNService.java
+git commit -m "Release v$VERSION_NAME ($VERSION_CODE) - Visualizer optimization & Root fix"
 git push origin main --force
 
 # 7. Создание релиза на GitHub

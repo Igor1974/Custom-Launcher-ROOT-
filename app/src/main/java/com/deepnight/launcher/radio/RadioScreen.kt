@@ -283,27 +283,34 @@ fun RadioVisualizerBackground(visualizerManager: AudioVisualizerManager) {
 
                 drawIntoCanvas { canvas ->
                     val nativeCanvas = canvas.nativeCanvas
+                    // Подготовка кисти и цветов вне цикла точек для скорости
                     val paint = android.graphics.Paint().apply {
-                        isAntiAlias = false // Отключаем для скорости на ТВ
+                        isAntiAlias = false
                     }
 
-                    // Рисуем снизу вверх
+                    // Цвета для интерполяции (Neon Cyan -> Deep Blue)
+                    val colorStart = Color(0xFF00E5FF)
+                    val colorEnd = Color(0xFF0060FF)
+
                     for (i in 0 until bandsCount) {
                         val magnitude = spectrum[i]
                         val x = i * step + (step - barWidth) / 2
                         
-                        // Усиление для красоты
                         val freqBoost = 1.0f + ( (i.toFloat() / bandsCount).pow(2f) * 4.0f)
                         val activeDots = (magnitude * freqBoost * totalPossibleDots).toInt().coerceIn(0, totalPossibleDots)
                         
                         if (activeDots == 0) continue
 
-                        val hue = (i.toFloat() / bandsCount * 360f)
-                        val baseColor = Color.hsv(hue, 0.8f, 1.0f).copy(alpha = finalAlpha * 0.7f).toArgb()
+                        // Быстрая линейная интерполяция цвета в зависимости от частоты (i)
+                        val fraction = i.toFloat() / bandsCount
+                        val r = (colorStart.red + (colorEnd.red - colorStart.red) * fraction)
+                        val g = (colorStart.green + (colorEnd.green - colorStart.green) * fraction)
+                        val b = (colorStart.blue + (colorEnd.blue - colorStart.blue) * fraction)
+                        val barColor = Color(r, g, b, finalAlpha * 0.6f).toArgb()
+                        paint.color = barColor
 
                         for (j in 0 until activeDots) {
                             val y = height - j * (dotHeight + gap) - 20.dp.toPx()
-                            paint.color = baseColor
                             nativeCanvas.drawRect(x, y, x + barWidth, y + dotHeight, paint)
                         }
                     }

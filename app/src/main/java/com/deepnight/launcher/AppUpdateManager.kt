@@ -196,12 +196,13 @@ object AppUpdateManager {
             }
             val result = withContext(Dispatchers.IO) {
                 val tmpPath = "/data/local/tmp/update.apk"
-                // Копируем файл в /data/local/tmp, выставляем права и устанавливаем
+                // Копируем через cat, так как у su точно есть доступ к обоим путям
                 com.topjohnwu.superuser.Shell.cmd(
-                    "cp ${file.absolutePath} $tmpPath",
+                    "rm -f $tmpPath",
+                    "cat ${file.absolutePath} > $tmpPath",
                     "chmod 666 $tmpPath",
                     "pm install -r -d -g $tmpPath",
-                    "rm $tmpPath"
+                    "rm -f $tmpPath"
                 ).exec()
             }
             
@@ -209,11 +210,11 @@ object AppUpdateManager {
                 Log.i(TAG, "Silent install successful")
                 return
             } else {
-                Log.e(TAG, "Silent install failed. Exit code: ${result.code}, Output: ${result.out}")
+                Log.e(TAG, "Silent install failed. Exit code: ${result.code}")
+                Log.e(TAG, "Error output: ${result.out.joinToString("\n")}")
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Root-установка не удалась, пробуем обычный способ", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Root-установка не удалась (код ${result.code})", Toast.LENGTH_SHORT).show()
                 }
-                // Если тихая установка не удалась, пробуем через Intent
             }
         } else {
             Log.d(TAG, "No root access or shell error, falling back to Intent install")

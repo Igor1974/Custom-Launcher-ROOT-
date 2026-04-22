@@ -19,7 +19,7 @@ if (localPropertiesFile.exists()) {
 val replicateToken: String = localProperties.getProperty("REPLICATE_API_TOKEN") ?: ""
 
 val appVersionName = "5.2.2"
-val appVersionCode = 620
+val appVersionCode = 621
 
 base {
     archivesName.set("DeepNight_Launcher_v$appVersionName")
