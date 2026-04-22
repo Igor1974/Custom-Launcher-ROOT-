@@ -27,10 +27,11 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 # 3. Список изменений
-CHANGELOG_TEXT="Hotfix v5.2.1 (Update 618):
-- Добавлено визуальное уведомление 'Установка...' при обновлении через Root.
-- Перенесен путь загрузки APK в публичную папку для стабильной работы на Android TV.
-- Исправлена критическая ошибка в механизме автообновления (suspend function call)."
+CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE):
+- Оптимизированный аудио-визуализатор для TV CPU в разделе Радио.
+- Новый индикатор прогресса (Neon Cyan Progress Bar) в диалоге обновления.
+- Улучшена надежность Root-установки (chmod 666).
+- Увеличены таймауты загрузки для стабильного обновления на слабом Wi-Fi."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
@@ -72,6 +73,8 @@ git add -f "$UPDATE_JSON" app/build.gradle.kts release.sh \
     app/proguard-rules.pro \
     app/src/main/AndroidManifest.xml \
     app/src/main/java/com/deepnight/launcher/MainActivity.kt \
+    app/src/main/java/com/deepnight/launcher/AppUpdateManager.kt \
+    app/src/main/java/com/deepnight/launcher/UpdateDialog.kt \
     app/src/main/java/com/deepnight/launcher/SystemInfoRepository.kt \
     app/src/main/java/com/deepnight/launcher/radio/RadioScreen.kt
 git commit -m "Release v$VERSION_NAME ($VERSION_CODE)"

@@ -1,5 +1,7 @@
 package com.deepnight.launcher.radio
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,11 +31,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -53,9 +59,12 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import com.deepnight.launcher.LauncherSettings
 import com.deepnight.launcher.ui.LauncherViewModel
+import com.deepnight.launcher.visualizer.AudioVisualizerManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -75,8 +84,8 @@ fun RadioScreen(onClose: () -> Unit) {
     val initialFocusRequester = remember { FocusRequester() }
     var focusAlreadyRequested by remember { mutableStateOf(false) }
 
-    // Удаляем BackHandler и заменяем его на onPreviewKeyEvent в Box ниже
-    // BackHandler { onClose() }
+    val visualizer by RadioManager.visualizer
+    val visualizerEnabled = remember { LauncherSettings.isVisualizerOverlayEnabled(context) }
 
     fun loadStations() {
         isLoading = true
@@ -236,7 +245,71 @@ fun RadioScreen(onClose: () -> Unit) {
                 }
             }
         }
+
+        // Визуализатор на переднем плане
+        if (visualizerEnabled && isPlaying && visualizer != null) {
+            RadioVisualizerBackground(visualizer!!)
+        }
     }
+}
+
+@Composable
+fun RadioVisualizerBackground(visualizerManager: AudioVisualizerManager) {
+    val spectrum by visualizerManager.spectrum.collectAsState()
+    
+    val bass by visualizerManager.bassLevel.collectAsState()
+    val mid by visualizerManager.midLevel.collectAsState()
+    val high by visualizerManager.highLevel.collectAsState()
+
+    val targetAlpha = if (bass + mid + high > 0.005f) 0.8f else 0f
+    val finalAlpha by animateFloatAsState(targetValue = targetAlpha, animationSpec = tween(1000), label = "alpha")
+
+    if (finalAlpha <= 0.05f) return
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .drawBehind {
+                val width = size.width
+                val height = size.height
+                val bandsCount = spectrum.size
+                val step = width / bandsCount
+                val barWidth = step * 0.7f
+                val dotHeight = 4.dp.toPx()
+                val gap = 2.dp.toPx()
+                val cornerRadius = dotHeight / 2f
+
+                val totalPossibleDots = (height * 0.4f / (dotHeight + gap)).toInt()
+
+                drawIntoCanvas { canvas ->
+                    val nativeCanvas = canvas.nativeCanvas
+                    val paint = android.graphics.Paint().apply {
+                        isAntiAlias = false // Отключаем для скорости на ТВ
+                    }
+
+                    // Рисуем снизу вверх
+                    for (i in 0 until bandsCount) {
+                        val magnitude = spectrum[i]
+                        val x = i * step + (step - barWidth) / 2
+                        
+                        // Усиление для красоты
+                        val freqBoost = 1.0f + ( (i.toFloat() / bandsCount).pow(2f) * 4.0f)
+                        val activeDots = (magnitude * freqBoost * totalPossibleDots).toInt().coerceIn(0, totalPossibleDots)
+                        
+                        if (activeDots == 0) continue
+
+                        val hue = (i.toFloat() / bandsCount * 360f)
+                        val baseColor = Color.hsv(hue, 0.8f, 1.0f).copy(alpha = finalAlpha * 0.7f).toArgb()
+
+                        for (j in 0 until activeDots) {
+                            val y = height - j * (dotHeight + gap) - 20.dp.toPx()
+                            paint.color = baseColor
+                            nativeCanvas.drawRect(x, y, x + barWidth, y + dotHeight, paint)
+                        }
+                    }
+                }
+            }
+    )
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -323,5 +396,3 @@ fun StationItem(
         }
     }
 }
-
-

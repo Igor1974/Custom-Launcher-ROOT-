@@ -1,6 +1,6 @@
 {
-    "versionCode": 618,
-    "versionName": "5.2.1",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.1/DeepNight_Launcher_v5.2.1-release.apk",
-    "changelog": "Hotfix v5.2.1 (Update 618):\n- Добавлено визуальное уведомление 'Установка...' при обновлении через Root.\n- Перенесен путь загрузки APK в публичную папку для стабильной работы на Android TV.\n- Исправлена критическая ошибка в механизме автообновления (suspend function call)."
+    "versionCode": 619,
+    "versionName": "5.2.2",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.2/DeepNight_Launcher_v5.2.2-release.apk",
+    "changelog": "DeepNight v5.2.2 (Build 619):\n- Оптимизированный аудио-визуализатор для TV CPU в разделе Радио.\n- Новый индикатор прогресса (Neon Cyan Progress Bar) в диалоге обновления.\n- Улучшена надежность Root-установки (chmod 666).\n- Увеличены таймауты загрузки для стабильного обновления на слабом Wi-Fi."
 }

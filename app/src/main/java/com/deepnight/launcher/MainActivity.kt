@@ -181,42 +181,6 @@ class MainActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    private fun ensureNotificationPermission() {
-        val packageName = packageName
-        val serviceName = "$packageName/com.deepnight.launcher.visualizer.VisualizerNotificationService"
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // Проверяем, включен ли уже наш слушатель
-                val enabledListeners = android.provider.Settings.Secure.getString(
-                    contentResolver,
-                    "enabled_notification_listeners"
-                )
-
-                if (enabledListeners == null || !enabledListeners.contains(serviceName)) {
-                    Log.d("MainActivity", "Attempting to auto-enable NotificationListener via Shell")
-
-                    val newList = if (enabledListeners.isNullOrBlank()) {
-                        serviceName
-                    } else {
-                        "$enabledListeners:$serviceName"
-                    }
-
-                    // Выполняем команду через libsu Shell
-                    // Если есть Root - сработает. Если нет - просто проигнорируется.
-                    Shell.cmd("settings put secure enabled_notification_listeners $newList").exec()
-
-                    withContext(Dispatchers.Main) {
-                        Log.i("MainActivity", "Notification Listener command executed")
-                    }
-                } else {
-                    Log.d("MainActivity", "NotificationListener already enabled")
-                }
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Failed to auto-enable NotificationListener: ${e.message}")
-            }
-        }
-    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -252,8 +216,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Пытаемся автоматически разрешить доступ к уведомлениям для визуализатора
-        ensureNotificationPermission()
 
         packageReceiver = PackageReceiver {
             // Список приложений в AppRepository уже обновлен в ресивере,
@@ -334,16 +296,6 @@ class MainActivity : ComponentActivity() {
                 val update = AppUpdateManager.checkForUpdates(this@MainActivity)
                 if (update != null) {
                     updateInfo = update
-                }
-            }
-
-            // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА DEEP NIGHT OS
-            if (LauncherSettings.isVisualizerOverlayEnabled(this@MainActivity)) {
-                val visualizerIntent = Intent(this@MainActivity, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
-                try {
-                    startForegroundService(visualizerIntent)
-                } catch (_: Exception) {
-                    startService(visualizerIntent)
                 }
             }
         }
@@ -720,11 +672,11 @@ class MainActivity : ComponentActivity() {
                             UpdateDialog(
                                 update = update,
                                 onDismiss = { updateInfo = null },
-                                onDownload = {
+                                onDownload = { onProgress ->
                                     scope.launch {
-                                        AppUpdateManager.downloadAndInstallUpdate(context, update)
+                                        AppUpdateManager.downloadAndInstallUpdate(context, update, onProgress)
+                                        updateInfo = null
                                     }
-                                    updateInfo = null
                                 }
                             )
                         }
@@ -742,14 +694,6 @@ class MainActivity : ComponentActivity() {
         // Когда мы возвращаемся в лаунчер - видео (если было) точно остановлено
         sendBroadcast(Intent("com.deepnight.launcher.VIDEO_STOPPED"))
 
-        // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИЗУАЛИЗАТОРА
-        Log.d("DeepNight", "MainActivity onResume - FORCING VISUALIZER START")
-        val visualizerIntent = Intent(this, com.deepnight.launcher.visualizer.VisualizerOverlayService::class.java)
-        try {
-            startForegroundService(visualizerIntent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
 
         lifecycleScope.launch {
             delay(3000)

@@ -20,6 +20,12 @@ object AppUpdateManager {
     private const val MIN_APK_SIZE = 1024 * 1024 // Минимум 1MB
     private const val BUFFER_SIZE = 8192
     
+    private val client = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .followRedirects(true)
+        .build()
+    
     data class UpdateInfo(
         val versionName: String,
         val versionCode: Int,
@@ -30,7 +36,6 @@ object AppUpdateManager {
 
     suspend fun checkForUpdates(context: Context): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
-            val client = AerialVideoProvider.client
             val request = Request.Builder().url(UPDATE_URL).build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@withContext null
@@ -68,10 +73,10 @@ object AppUpdateManager {
         null
     }
 
-    suspend fun downloadAndInstallUpdate(context: Context, update: UpdateInfo) = withContext(Dispatchers.IO) {
+    suspend fun downloadAndInstallUpdate(context: Context, update: UpdateInfo, onProgress: ((Float) -> Unit)? = null) = withContext(Dispatchers.IO) {
         // Проверка разрешения на установку из неизвестных источников (Android 8+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!context.packageManager.canRequestPackageInstalls()) {
+            if (!context.packageManager.canRequestPackageInstalls() && !com.topjohnwu.superuser.Shell.getShell().isRoot) {
                 withContext(Dispatchers.Main) {
                     val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                         data = Uri.parse("package:${context.packageName}")
@@ -84,48 +89,50 @@ object AppUpdateManager {
             }
         }
 
-        // Скачиваем в кэш-директорию приложения
+        // Используем внешнюю папку для APK, так как системный установщик часто не видит внутренний кэш
+        // Приоритет отдаем getExternalFilesDir(null), так как он более доступен для FileProvider на ТВ
+        val apkDir = context.getExternalFilesDir(null) ?: context.externalCacheDir ?: context.cacheDir
         val fileName = "update.apk"
-        val apkFile = File(context.cacheDir, fileName)
+        val apkFile = File(apkDir, fileName)
         
         // Удаляем старый файл если он есть
-        if (apkFile.exists()) apkFile.delete()
+        if (apkFile.exists()) {
+            Log.d(TAG, "Удаление старого APK: ${apkFile.absolutePath}")
+            apkFile.delete()
+        }
         
         withContext(Dispatchers.Main) {
-            Toast.makeText(context, "Загрузка обновления...", Toast.LENGTH_SHORT).show()
+            if (onProgress == null) {
+                Toast.makeText(context, "Загрузка обновления...", Toast.LENGTH_SHORT).show()
+            }
         }
         
         try {
-            // Скачиваем файл напрямую через OkHttp
-            downloadFile(update.link, apkFile)
+            downloadFile(update.link, apkFile, onProgress)
             
-            // Проверяем размер файла
             if (apkFile.length() < MIN_APK_SIZE) {
                 throw IllegalStateException("Файл слишком мал: ${apkFile.length()} байт")
             }
             
-            // Проверка контрольной суммы если есть
+            Log.d(TAG, "Файл загружен: ${apkFile.absolutePath}, размер: ${apkFile.length()}")
+            
             update.checksum?.let { expectedHash ->
                 if (!verifyChecksum(apkFile, expectedHash)) {
-                    throw IllegalStateException("Неверная контрольная сумма файла")
+                    throw IllegalStateException("Неверная контрольная сумма")
                 }
             }
             
-            withContext(Dispatchers.Main) {
-                installApk(context, apkFile)
-            }
+            installApk(context, apkFile)
         } catch (e: Exception) {
             Log.e(TAG, "Download/Install failed", e)
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
-            // Удаляем битый файл если он был создан
             if (apkFile.exists()) apkFile.delete()
         }
     }
     
-    private fun downloadFile(url: String, outputFile: File) {
-        val client = AerialVideoProvider.client
+    private fun downloadFile(url: String, outputFile: File, onProgress: ((Float) -> Unit)?) {
         val request = Request.Builder().url(url).build()
         
         client.newCall(request).execute().use { response ->
@@ -133,11 +140,23 @@ object AppUpdateManager {
                 throw IllegalStateException("HTTP ${response.code}")
             }
             
-            response.body?.byteStream()?.use { input ->
+            val body = response.body ?: throw IllegalStateException("Пустое тело ответа")
+            val totalBytes = body.contentLength()
+            
+            body.byteStream().use { input ->
                 outputFile.outputStream().use { output ->
-                    input.copyTo(output, BUFFER_SIZE)
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    var bytesRead = 0L
+                    var read: Int
+                    while (input.read(buffer).also { read = it } != -1) {
+                        output.write(buffer, 0, read)
+                        bytesRead += read
+                        if (totalBytes > 0 && onProgress != null) {
+                            onProgress(bytesRead.toFloat() / totalBytes)
+                        }
+                    }
                 }
-            } ?: throw IllegalStateException("Пустое тело ответа")
+            }
         }
     }
     
@@ -159,7 +178,7 @@ object AppUpdateManager {
         }
     }
 
-    private fun installApk(context: Context, file: File) {
+    private suspend fun installApk(context: Context, file: File) {
         Log.d(TAG, "Установка APK: ${file.absolutePath}, размер: ${file.length()}")
         
         if (!file.exists()) {
@@ -167,35 +186,77 @@ object AppUpdateManager {
             return
         }
 
+        // Если есть Root - устанавливаем тихо и надежно
+        val isRoot = try { com.topjohnwu.superuser.Shell.getShell().isRoot } catch (e: Exception) { false }
+        
+        if (isRoot) {
+            Log.d(TAG, "Root detected, using silent install")
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Установка обновления (Root)...", Toast.LENGTH_LONG).show()
+            }
+            val result = withContext(Dispatchers.IO) {
+                // Добавляем -r (reinstall), -d (downgrade), -g (grant permissions)
+                // Важно: на некоторых прошивках нужно сначала сделать chmod
+                com.topjohnwu.superuser.Shell.cmd(
+                    "chmod 666 ${file.absolutePath}",
+                    "pm install -r -d -g ${file.absolutePath}"
+                ).exec()
+            }
+            
+            if (result.isSuccess) {
+                Log.i(TAG, "Silent install successful")
+                return
+            } else {
+                Log.e(TAG, "Silent install failed. Exit code: ${result.code}, Output: ${result.out}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Root-установка не удалась, пробуем обычный способ", Toast.LENGTH_SHORT).show()
+                }
+                // Если тихая установка не удалась, пробуем через Intent
+            }
+        } else {
+            Log.d(TAG, "No root access or shell error, falling back to Intent install")
+        }
+
+        launchInstallIntent(context, file)
+    }
+
+    private suspend fun launchInstallIntent(context: Context, file: File) {
         // Делаем файл доступным для чтения другими приложениями (установщиком)
         file.setReadable(true, false)
         
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
+        val uri = try {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get URI for file", e)
+            return
+        }
         
-        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
                    Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
             putExtra(Intent.EXTRA_RETURN_RESULT, true)
-            putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, context.packageName)
         }
         
-        // Для Android 10+ (API 29+) используем ACTION_VIEW как более стандартный
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            installIntent.action = Intent.ACTION_VIEW
+        // Для старых версий дублируем через ACTION_INSTALL_PACKAGE
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            installIntent.action = Intent.ACTION_INSTALL_PACKAGE
         }
         
         try {
+            Log.d(TAG, "Launching install intent for URI: $uri")
             context.startActivity(installIntent)
         } catch (e: Exception) {
-            Log.e(TAG, "Install failed", e)
-            Toast.makeText(context, "Ошибка установки: ${e.message}", Toast.LENGTH_LONG).show()
+            Log.e(TAG, "Install intent failed", e)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Ошибка запуска установки: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 }
