@@ -305,12 +305,8 @@ class MainActivity : ComponentActivity() {
                 try {
                     Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
                     if (Shell.getShell().isRoot) {
-                        // Если это первый запуск или мы не в системе - запускаем трансформацию
-                        if (!DeepNightOSManager.isAlreadyIntegrated()) {
-                            DeepNightOSManager.transformToDeepNightOS(this@MainActivity)
-                        } else {
-                            DeepNightOSManager.applyCriticalFixes(this@MainActivity)
-                        }
+                        // Только легкие фиксы. Полная трансформация - только через диалог вручную
+                        DeepNightOSManager.applyCriticalFixes(this@MainActivity)
                     }
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Root init failed", e)

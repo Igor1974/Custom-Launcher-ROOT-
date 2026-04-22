@@ -196,23 +196,29 @@ object SystemInfoRepository {
     }
 
     suspend fun fetchLocationByIp(context: Context): LocationData? = withContext(Dispatchers.IO) {
-        // Сначала пытаемся получить реальные координаты, если есть разрешение
+        val ipLoc = fetchIpLocationInternal(context)
         val coarseLoc = fetchCoarseLocation(context)
-        if (coarseLoc != null) {
-            Log.d("SystemInfo", "Using coarse location: ${coarseLoc.lat}, ${coarseLoc.lon}")
-            return@withContext coarseLoc
+
+        // Если есть и то и другое, берем город от IP (он понятный), а координаты точнее от системы
+        if (ipLoc != null && coarseLoc != null) {
+            Log.d("SystemInfo", "Merging IP location (${ipLoc.city}) with system coordinates")
+            return@withContext ipLoc.copy(lat = coarseLoc.lat, lon = coarseLoc.lon)
         }
 
+        return@withContext ipLoc ?: coarseLoc
+    }
+
+    private suspend fun fetchIpLocationInternal(context: Context): LocationData? = withContext(Dispatchers.IO) {
         try {
             val builder = okhttp3.OkHttpClient.Builder()
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
 
             getNetworkWithoutVpn(context)?.let { network ->
                 builder.socketFactory(network.socketFactory)
                 builder.dns(object : okhttp3.Dns {
                     override fun lookup(hostname: String): List<java.net.InetAddress> {
-                        return network.getAllByName(hostname).toList()
+                        return try { network.getAllByName(hostname).toList() } catch (_: Exception) { emptyList() }
                     }
                 })
             }
@@ -224,20 +230,16 @@ object SystemInfoRepository {
                 .build()
 
             val responseBody = client.newCall(request).execute().body?.string() ?: return@withContext null
-            Log.d("SystemInfo", "IP Geolocation Response: $responseBody")
-
+            
             if (responseBody.contains("\"status\":\"success\"")) {
                 val city = responseBody.substringAfter("\"city\":\"").substringBefore("\"")
                 val lat = responseBody.substringAfter("\"lat\":").substringBefore(",").toDoubleOrNull() ?: 0.0
                 val lon = responseBody.substringAfter("\"lon\":").substringBefore("}")
                     .filter { it.isDigit() || it == '.' || it == '-' }.toDoubleOrNull() ?: 0.0
                 LocationData(lat, lon, city)
-            } else {
-                Log.e("SystemInfo", "IP Geolocation failed: status not success")
-                null
-            }
+            } else null
         } catch (e: Exception) {
-            Log.e("SystemInfo", "IP Geolocation error: ${e.message}")
+            Log.e("SystemInfo", "IP Geolocation internal error: ${e.message}")
             null
         }
     }
@@ -248,8 +250,11 @@ object SystemInfoRepository {
             if (loc == null) return@withContext Triple(cachedWeatherTemp, cachedWeatherIcon, cachedWeatherDesc)
             cachedLocation = loc
 
-            // Сначала пробуем wttr.in (он надежнее в РФ напрямую)
-            val wttrResult = fetchFromWttrIn(context, loc.city)
+            // Используем координаты для wttr.in для максимальной точности
+            val weatherQuery = if (loc.lat != 0.0 || loc.lon != 0.0) "${loc.lat},${loc.lon}" else loc.city
+            
+            // Сначала пробуем wttr.in
+            val wttrResult = fetchFromWttrIn(context, weatherQuery)
             if (wttrResult != null) {
                 cachedWeatherTemp = wttrResult.first
                 cachedWeatherIcon = wttrResult.second
@@ -311,7 +316,7 @@ object SystemInfoRepository {
         }
     }
 
-    private suspend fun fetchFromWttrIn(context: Context, city: String): Triple<String, String, String>? = withContext(Dispatchers.IO) {
+    private suspend fun fetchFromWttrIn(context: Context, query: String): Triple<String, String, String>? = withContext(Dispatchers.IO) {
         try {
             val builder = okhttp3.OkHttpClient.Builder()
                 .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
@@ -326,7 +331,7 @@ object SystemInfoRepository {
             }
 
             val request = okhttp3.Request.Builder()
-                .url("http://wttr.in/${city}?format=%t|%c|%C&lang=ru")
+                .url("http://wttr.in/${query}?format=%t|%c|%C&lang=ru")
                 .header("User-Agent", "curl/7.64.1")
                 .header("Accept-Language", "ru")
                 .build()
