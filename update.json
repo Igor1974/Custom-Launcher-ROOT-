@@ -1,7 +1,7 @@
 {
-    "versionCode": 625,
-    "versionName": "5.2.5",
+    "versionCode": 626,
+    "versionName": "5.2.6",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.5.apk",
-    "changelog": "DeepNight v5.2.5 (Build 625):\n- Оптимизированный аудио-визуализатор для TV CPU в разделе Радио.\n- Новый индикатор прогресса (Neon Cyan Progress Bar) в диалоге обновления.\n- Улучшена надежность Root-установки (chmod 666).\n- Увеличены таймауты загрузки для стабильного обновления на слабом Wi-Fi.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.5/DeepNight_Launcher_v5.2.5-release.apk"
+    "changelog": "DeepNight v5.2.6 (Build 626):\n- Исправлены найденные ошибки).\n- Удален тест скорости интернета (удален из статус-бара и репозитория).\n- Оптимизирован дизайн окна 'О программе' (логотип удален, улучшена верстка).",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.6/DeepNight_Launcher_v5.2.6-release.apk"
 }
