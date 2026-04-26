@@ -1,7 +1,7 @@
 {
-    "versionCode": 632,
+    "versionCode": 633,
     "versionName": "5.2.8",
-    "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.3.0.apk",
-    "changelog": "DeepNight v5.2.8 (Build 632):\n- Исправлены найденные ошибки).\n- Удален тест скорости интернета (удален из статус-бара и репозитория).\n- Оптимизирован дизайн окна 'О программе' (логотип удален, улучшена верстка).",
+    "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
+    "changelog": "DeepNight v5.2.8 (Build 633):\n- Исправлены найденные ошибки).\n- Удален тест скорости интернета (удален из статус-бара и репозитория).\n- Оптимизирован дизайн окна 'О программе' (логотип удален, улучшена верстка).",
     "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.8/DeepNight_Launcher_v5.2.8-release.apk"
 }
