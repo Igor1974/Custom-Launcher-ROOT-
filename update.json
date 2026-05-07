@@ -1,7 +1,7 @@
 {
-    "versionCode": 640,
-    "versionName": "5.2.8",
+    "versionCode": 641,
+    "versionName": "5.2.9",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.2.8 (Build 640):\n- Исправлены найденные ошибки).\n- Удален тест скорости интернета (удален из статус-бара и репозитория).\n- Оптимизирован дизайн окна 'О программе' (логотип удален, улучшена верстка).",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.8/DeepNight_Launcher_v5.2.8-release.apk"
+    "changelog": "DeepNight v5.2.9 (Build 641):\n- ✨ Интеграция ИИ: Добавлена поддержка голосового ИИ-поиска и интеллектуальных команд.\n- 🎨 Обновление дизайна: Переработан статус-бар, улучшена читаемость и исправлено «схлопывание» кнопок.\n- 🔎 Поиск новинок: Добавлен новый раздел для быстрого нахождения свежего контента.\n- 📻 Радио 2.0: Исправлены зависания при переключении станций и обновлен аудио-визуализатор.\n- 🛠 Стабильность: Исправлены ошибки в управлении фокусом и фоновом воспроизведении.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.2.9/DeepNight_Launcher_v5.2.9-release.apk"
 }
