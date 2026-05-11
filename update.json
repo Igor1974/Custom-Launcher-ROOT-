@@ -1,7 +1,7 @@
 {
-    "versionCode": 644,
-    "versionName": "5.3.1",
+    "versionCode": 645,
+    "versionName": "5.3.2",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.3.1 (Build 644) & Deep Night OS Core v2.6:\n- 🚀 Deep Night OS Core v2.6: Обновлена системная база, улучшена работа RRO/Fabricated Overlays и добавлены специфичные патчи для TCL и Sony.\n- 🔊 DSP Movie Mode: Новый 11-полосный эквалайзер с агрессивным усилением (31-125 Гц, 8-16 кГц) и многополосным компрессором для глубокого кинотеатрального звука.\n- 🔎 Smart Search Fix: Исправлена навигация в результатах поиска — теперь фокус корректно переходит на сетку торрентов (gridFocusRequester).\n- 🌡 Thermal Control: Реализован лимит производительности для предотвращения перегрева слабых SoC при просмотре тяжелого контента.\n- 📉 Extreme Optimization: Размер APK оптимизирован до ~3.6 МБ благодаря глубокой R8/Proguard настройке.\n- 🎨 UI/UX: Улучшена подсветка фокуса карточек и исправлено поведение клавиатуры при нажатии «Вниз» в полях ввода.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.3.1/DeepNight_Launcher_v5.3.1-release.apk"
+    "changelog": "DeepNight v5.3.2 (Build 645)\n- Исправление отображения погоды.\n- Добавлены настройки мониторинга системы.\n- Экспериментпльно загрузка CPU (может работать не у всех)\n- Будильник, если время не настроено, оверлей не показывается.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.3.2/DeepNight_Launcher_v5.3.2-release.apk"
 }
