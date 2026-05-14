@@ -1,7 +1,7 @@
 {
-    "versionCode": 646,
-    "versionName": "5.3.2",
+    "versionCode": 647,
+    "versionName": "5.3.3",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.3.2 (Build 646)\n- Исправление отображения погоды.\n- Добавлены настройки мониторинга системы.\n- Экспериментпльно загрузка CPU (может работать не у всех)\n- Будильник, если время не настроено, оверлей не показывается.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.3.2/DeepNight_Launcher_v5.3.2-release.apk"
+    "changelog": "DeepNight v5.3.3 (Build 647)\n- Исправление отображения погоды.\n- Добавлены настройки СТАТУСБАРА.\n- Экспериментпльно загрузка CPU (может работать не у всех)\n- Полировка радио",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.3.3/DeepNight_Launcher_v5.3.3-release.apk"
 }

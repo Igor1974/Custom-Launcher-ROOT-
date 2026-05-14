@@ -29,9 +29,9 @@ echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 # 3. Список изменений
 CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE)
 - Исправление отображения погоды.
-- Добавлены настройки мониторинга системы.
+- Добавлены настройки СТАТУСБАРА.
 - Экспериментпльно загрузка CPU (может работать не у всех)
-- Будильник, если время не настроено, оверлей не показывается."
+- Полировка радио"
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
