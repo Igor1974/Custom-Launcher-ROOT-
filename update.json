@@ -2,6 +2,6 @@
     "versionCode": 652,
     "versionName": "5.3.5",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.3.5 (Build 652)\n- Исправление погоды.\n- Добавлены разрешения для разных производителей.\n- Стабилизация фоновых процессов",
+    "changelog": "DeepNight v5.3.5 (Build 652)\n- Исправление погоды.\n- Исправление навигации в фильмах.\n- Добавлены разрешения для разных производителей.\n- Стабилизация фоновых процессов.",
     "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.3.5/DeepNight_Launcher_v5.3.5-release.apk"
 }
