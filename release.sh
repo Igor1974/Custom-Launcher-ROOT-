@@ -26,12 +26,13 @@ fi
 
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
-# 3. Список изменений
+# 3. Список изменений (Актуализирован под исправления погоды и SypexGeo)
 CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE)
-- Исправление погоды.
-- Исправление навигации в фильмах.
-- Тест автообновления.
-- Стабилизация фоновых процессов."
+- Переход на каскадный отказоустойчивый парсер погоды (Open-Meteo + Яндекс).
+- Внедрено адаптивное кэширование погоды при утреннем включении ТВ-бокса.
+- Исправлено падение Logcat из-за переполнения буфера.
+- Оптимизирована навигация в секции фильмов.
+- Стабилизация root-скриптов и фоновых процессов воркера."
 
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
@@ -39,6 +40,18 @@ APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1
 if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
     echo -e "${RED}Ошибка: APK не найден! Сначала выполните: ./gradlew assembleRelease${NC}"
     exit 1
+fi
+
+# Проверяем, не забыл ли ты сделать билд перед релизом
+APK_TIME=$(stat -c %Y "$APK_PATH")
+NOW_TIME=$(date +%s)
+if [ $((NOW_TIME - APK_TIME)) -gt 600 ]; then
+    echo -e "${RED}Предупреждение: Найденный APK старше 10 минут! Возможно, ты забыл пересобрать проект.${NC}"
+    read -p "Продолжить со старым APK? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
 fi
 
 APK_FILENAME=$(basename "$APK_PATH")
@@ -53,7 +66,6 @@ fi
 echo -e "${BLUE}Обновляю $UPDATE_JSON...${NC}"
 DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME/$APK_FILENAME"
 
-# Передаем чейнджлог в python через переменную окружения для избежания проблем с кавычками
 export CHANGELOG_ENV="$CHANGELOG_TEXT"
 python3 -c "
 import json, os
@@ -69,10 +81,12 @@ with open('$UPDATE_JSON', 'w') as f:
 
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
-# Добавляем только необходимые для работы обновлений файлы
 git add "$UPDATE_JSON" release.sh
 git commit -m "Update release info v$VERSION_NAME ($VERSION_CODE)"
-git push origin main --force
+
+# Убираем жесткий --force, заменяя его на безопасный pull перед отправкой
+git pull origin main --rebase
+git push origin main
 
 # 7. Создание релиза на GitHub
 TAG="v$VERSION_NAME"
@@ -91,7 +105,7 @@ gh release create "$TAG" "$APK_PATH" \
 
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}======================================"
-    echo -e "   РЕЛИЗ v$VERSION_NAME УСПЕШНО ЗАВЕРШЕН!"
+    echo -e "    РЕЛИЗ v$VERSION_NAME УСПЕШНО ЗАВЕРШЕН!"
     echo -e "======================================${NC}"
 else
     echo -e "${RED}Произошла ошибка при создании релиза.${NC}"
