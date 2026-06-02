@@ -1,7 +1,7 @@
 {
-    "versionCode": 692,
-    "versionName": "5.4.3",
+    "versionCode": 693,
+    "versionName": "5.4.4",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.4.3 (Build 692)\n- TV-Модуль: Мини-кинотеатр прямо в лаунчере! Максимально легкий способ смотреть ТВ без лишних приложений.\n- Реализовал автообновления плейлиста тв каналов. \n- Вернул погоду на 7 дней.\n- Мелкие правки для стабильности.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.4.3/DeepNight_Launcher_v5.4.3-release.apk"
+    "changelog": "DeepNight v5.4.4 (Build 693)\n- Автономность: Внедрена система активной защиты от выгрузки из памяти (Watchdog Service) — лаунчер всегда остается активным.\n- Стабильность: Реализовано автоматическое восстановление прав управления (Accessibility) для HyperOS.\n- Изменение кода: Оптимизирована работа главного потока для плавной анимации.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.4.4/DeepNight_Launcher_v5.4.4-release.apk"
 }
