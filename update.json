@@ -1,7 +1,7 @@
 {
-    "versionCode": 700,
-    "versionName": "5.4.6",
+    "versionCode": 702,
+    "versionName": "5.4.7",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.4.6 (Build 700)\n- Система папок: Полная поддержка группировки приложений с исправленной навигацией и фокусом.\n- Проводник (File Explorer): Встроенный менеджер файлов и установка APK.\n- Сайдбар: Добавлен быстрый переход к файлам и закрытие жестом «Вправо» на пульте.\n- Планируемые функции: Setup Wizard — красивый экран первой настройки системы (возможна реализация).",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.4.6/DeepNight_Launcher_v5.4.6-release.apk"
+    "changelog": "DeepNight v5.4.7 (Build 702)\n- Cosmic Flow: Новая встроенная игра-стрелялка с системой прокачки и уровнями сложности.\n- Система папок: Полная поддержка группировки приложений.\n- Проводник (File Explorer): Встроенный менеджер файлов и установка APK.\n- Сайдбар: Добавлен быстрый переход к файлам и закрытие жестом «Вправо» на пульте.\n- Планируемые функции: Setup Wizard — красивый экран первой настройки системы (возможна реализация).",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.4.7/DeepNight_Launcher_v5.4.7-release.apk"
 }
