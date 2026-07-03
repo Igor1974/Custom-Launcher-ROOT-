@@ -27,6 +27,7 @@ fi
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE) 
+- Экспериментальный SECURITY-модуль: Теперь прямо в лаунчере можно смотреть свои IP-камеры.
 - Исправление найженных ошибок.
 - Оптимизация кода."
 # 4. Поиск APK
