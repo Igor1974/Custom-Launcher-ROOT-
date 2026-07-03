@@ -1,7 +1,7 @@
 {
-    "versionCode": 725,
+    "versionCode": 726,
     "versionName": "5.5.3",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.5.3 (Build 725) \n- Экспериментальный SECURITY-модуль: Теперь прямо в лаунчере можно смотреть свои IP-камеры.\n- Исправление найженных ошибок.\n- Оптимизация кода.",
+    "changelog": "DeepNight v5.5.3 (Build 726) \n- Экспериментальный SECURITY-модуль: Теперь прямо в лаунчере можно смотреть свои IP-камеры.\n- Исправление найженных ошибок.\n- Оптимизация кода.",
     "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.5.3/DeepNight_Launcher_v5.5.3-release.apk"
 }
