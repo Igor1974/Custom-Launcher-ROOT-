@@ -1,7 +1,7 @@
 {
-    "versionCode": 726,
-    "versionName": "5.5.3",
+    "versionCode": 728,
+    "versionName": "5.5.4",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.5.3 (Build 726) \n- Экспериментальный SECURITY-модуль: Теперь прямо в лаунчере можно смотреть свои IP-камеры.\n- Исправление найженных ошибок.\n- Оптимизация кода.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.5.3/DeepNight_Launcher_v5.5.3-release.apk"
+    "changelog": "DeepNight v5.5.4 (Build 728) \n- Глобальные темы: Мгновенная смена стиля интерфейса (Deep Night, Ghost, Cyberpunk).\n- Кастомизация: Все темы полностью настраиваемые (прозрачность, канты, формы, градиенты).\n- Glass UI: Стеклянный стиль для уведомлений, сайдбара, папок и диалогов.\n- Реактивный интерфейс: Применение настроек и обновление иконок без перезагрузки.\n- Прозрачный статус-бар: Улучшена читаемость текста через динамические тени.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.5.4/DeepNight_Launcher_v5.5.4-release.apk"
 }
