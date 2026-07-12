@@ -26,7 +26,8 @@ fi
 
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
-CHANGELOG_TEXT="Deep Night Launcher v$VERSION_NAME. Исправление проблем и ошибок."
+CHANGELOG_TEXT="Deep Night Launcher v$VERSION_NAME.
+ Исправление проблем и ошибок."
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 
