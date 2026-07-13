@@ -26,8 +26,16 @@ fi
 
 echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
-CHANGELOG_TEXT="Deep Night Launcher v$VERSION_NAME.
- Исправление проблем и ошибок."
+CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE).
+- Исправление проблем и ошибок.
+- Устранены утечки ресурсов.
+- В SystemSettings добавлены кнопки:
+    Установка лаунчера по умолчанию.
+    Заморозить / разморозить стоковые лаунчеры (с проверкой результата)
+    Управление оверлеем громкости (DeepNight / системный)
+    Lite-режим (отключение эффектов для FPS+)
+- Приложение стало быстрее, стабильнее и удобнее
+  "
 # 4. Поиск APK
 APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 
