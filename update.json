@@ -1,7 +1,7 @@
 {
-    "versionCode": 749,
+    "versionCode": 750,
     "versionName": "5.5.7",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "DeepNight v5.5.7 (Build 749).\n- Исправление проблем и ошибок.\n- Устранены утечки ресурсов.\n- В SystemSettings добавлены кнопки:\n    Установка лаунчера по умолчанию.\n    Заморозить / разморозить стоковые лаунчеры (с проверкой результата)\n    Управление оверлеем громкости (DeepNight / системный)\n    Lite-режим (отключение эффектов для FPS+)\n- Приложение стало быстрее, стабильнее и удобнее\n  ",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.5.7/DeepNight_Launcher_v5.5.7-release.apk"
+    "changelog": "DeepNight v5.5.7 (Build 750).\n- Масштабная архитектурная оптимизация ИИ-модуля.\n- Добавлена поддержка Google Media3 (ExoPlayer) для Dolby Vision Profile 7.\n- Оптимизирован поиск новинок и фильмов (параллельная загрузка).\n- Исправление проблем с предпросмотром ТВ и растягиванием изображения.\n- Переход на Multi-ABI сборку (отдельные APK для ARM и ARM64).\n- Общая оптимизация стабильности и скорости работы.\n  ",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.5.7/DeepNight_Launcher_v5.5.7-universal-release.apk"
 }

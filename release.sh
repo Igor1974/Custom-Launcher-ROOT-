@@ -6,7 +6,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}=== DeepNight Launcher Release Tool ===${NC}"
+echo -e "${BLUE}=== DeepNight Launcher Release Tool (Multi-ABI) ===${NC}"
 
 # 1. Проверка gh CLI
 if ! command -v gh &> /dev/null; then
@@ -24,50 +24,59 @@ if [ -z "$VERSION_NAME" ]; then
     exit 1
 fi
 
-echo -e "Готовим релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
+echo -e "Готовим мульти-релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 CHANGELOG_TEXT="DeepNight v$VERSION_NAME (Build $VERSION_CODE).
-- Исправление проблем и ошибок.
-- Устранены утечки ресурсов.
-- В SystemSettings добавлены кнопки:
-    Установка лаунчера по умолчанию.
-    Заморозить / разморозить стоковые лаунчеры (с проверкой результата)
-    Управление оверлеем громкости (DeepNight / системный)
-    Lite-режим (отключение эффектов для FPS+)
-- Приложение стало быстрее, стабильнее и удобнее
+- Масштабная архитектурная оптимизация ИИ-модуля.
+- Добавлена поддержка Google Media3 (ExoPlayer) для Dolby Vision Profile 7.
+- Оптимизирован поиск новинок и фильмов (параллельная загрузка).
+- Исправление проблем с предпросмотром ТВ и растягиванием изображения.
+- Переход на Multi-ABI сборку (отдельные APK для ARM и ARM64).
+- Общая оптимизация стабильности и скорости работы.
   "
-# 4. Поиск APK
-APK_PATH=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 
-if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
-    echo -e "${RED}Ошибка: APK не найден! Сначала выполните: ./gradlew assembleRelease${NC}"
+# 4. Поиск APK для разных архитектур
+APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
+APK_ARM64=$(find app/build/outputs/apk/release -name "*arm64-v8a-release.apk" | head -n 1)
+APK_UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal-release.apk" | head -n 1)
+
+if [ -z "$APK_UNIVERSAL" ]; then
+    # Fallback if universal is disabled
+    APK_UNIVERSAL=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+fi
+
+if [ -z "$APK_ARM" ] && [ -z "$APK_ARM64" ]; then
+    echo -e "${RED}Ошибка: APK не найдены! Сначала выполните: ./gradlew assembleRelease${NC}"
     exit 1
 fi
 
-# Проверяем, не забыл ли ты сделать билд перед релизом
-APK_TIME=$(stat -c %Y "$APK_PATH")
+# Проверка свежести файлов
+APK_TIME=$(stat -c %Y "$APK_UNIVERSAL")
 NOW_TIME=$(date +%s)
 if [ $((NOW_TIME - APK_TIME)) -gt 600 ]; then
-    echo -e "${RED}Предупреждение: Найденный APK старше 10 минут! Возможно, ты забыл пересобрать проект.${NC}"
-    read -p "Продолжить со старым APK? (y/n) " -n 1 -r
+    echo -e "${RED}Предупреждение: APK старше 10 минут!${NC}"
+    read -p "Продолжить со старыми файлами? (y/n) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
     fi
 fi
 
-APK_FILENAME=$(basename "$APK_PATH")
-echo -e "Найден файл: ${GREEN}$APK_FILENAME${NC}"
+echo -e "Найдены файлы:"
+[ -f "$APK_ARM" ] && echo -e "- ARM (32bit): ${GREEN}$(basename "$APK_ARM")${NC}"
+[ -f "$APK_ARM64" ] && echo -e "- ARM64 (64bit): ${GREEN}$(basename "$APK_ARM64")${NC}"
+[ -f "$APK_UNIVERSAL" ] && echo -e "- Universal: ${GREEN}$(basename "$APK_UNIVERSAL")${NC}"
 
-# 5. Обновление update.json
+# 5. Обновление update.json (всегда используем Universal для авто-обновления)
 UPDATE_JSON="update.json"
 if [ ! -f "$UPDATE_JSON" ]; then
     echo '{"versionCode": 0, "versionName": "0", "link": "", "changelog": ""}' > "$UPDATE_JSON"
 fi
 
-echo -e "${BLUE}Обновляю $UPDATE_JSON...${NC}"
-DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME/$APK_FILENAME"
+APK_UNIVERSAL_FILENAME=$(basename "$APK_UNIVERSAL")
+DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME/$APK_UNIVERSAL_FILENAME"
 
+echo -e "${BLUE}Обновляю $UPDATE_JSON (ссылка на Universal)...${NC}"
 export CHANGELOG_ENV="$CHANGELOG_TEXT"
 python3 -c "
 import json, os
@@ -84,9 +93,7 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add "$UPDATE_JSON" release.sh
-git commit -m "Update release info v$VERSION_NAME ($VERSION_CODE)"
-
-# Убираем жесткий --force, заменяя его на безопасный pull перед отправкой
+git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) with multi-ABI support"
 git pull origin main --rebase
 git push origin main
 
@@ -100,15 +107,21 @@ if gh release view "$TAG" &>/dev/null; then
     git push --delete origin "$TAG" 2>/dev/null
 fi
 
-gh release create "$TAG" "$APK_PATH" \
-    --title "Release $VERSION_NAME" \
-    --notes "$CHANGELOG_TEXT" \
-    --target main
+# Собираем список файлов для загрузки
+UPLOAD_FILES=""
+[ -f "$APK_ARM" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_ARM\""
+[ -f "$APK_ARM64" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_ARM64\""
+[ -f "$APK_UNIVERSAL" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_UNIVERSAL\""
+
+eval "gh release create \"$TAG\" $UPLOAD_FILES \
+    --title \"Release $VERSION_NAME\" \
+    --notes \"$CHANGELOG_TEXT\" \
+    --target main"
 
 # shellcheck disable=SC2181
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}======================================"
-    echo -e "    РЕЛИЗ v$VERSION_NAME УСПЕШНО ЗАВЕРШЕН!"
+    echo -e "    РЕЛИЗ v$VERSION_NAME (Multi-ABI) УСПЕШНО ЗАВЕРШЕН!"
     echo -e "======================================${NC}"
 else
     echo -e "${RED}Произошла ошибка при создании релиза.${NC}"
