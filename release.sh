@@ -92,7 +92,6 @@ with open('$UPDATE_JSON', 'w') as f:
 
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
-# Добавляем все изменения (включая README.md и удаленные скриншоты)
 git add -A
 git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) with multi-ABI support"
 git pull origin main --rebase
@@ -106,18 +105,21 @@ if gh release view "$TAG" &>/dev/null; then
     echo "Релиз $TAG уже существует. Перезаписываю..."
     gh release delete "$TAG" --yes
     git push --delete origin "$TAG" 2>/dev/null
+    sleep 3 # Даем GitHub время на удаление
 fi
 
-# Собираем список файлов для загрузки
-UPLOAD_FILES=""
-[ -f "$APK_ARM" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_ARM\""
-[ -f "$APK_ARM64" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_ARM64\""
-[ -f "$APK_UNIVERSAL" ] && UPLOAD_FILES="$UPLOAD_FILES \"$APK_UNIVERSAL\""
+# Собираем список файлов для загрузки через массив (самый надежный способ в bash)
+files=()
+[ -f "$APK_ARM" ] && files+=("$APK_ARM")
+[ -f "$APK_ARM64" ] && files+=("$APK_ARM64")
+[ -f "$APK_UNIVERSAL" ] && files+=("$APK_UNIVERSAL")
 
-eval "gh release create \"$TAG\" $UPLOAD_FILES \
-    --title \"Release $VERSION_NAME\" \
-    --notes \"$CHANGELOG_TEXT\" \
-    --target main"
+echo "Загружаю файлы: ${files[*]}"
+
+gh release create "$TAG" "${files[@]}" \
+    --title "Release $VERSION_NAME" \
+    --notes "$CHANGELOG_TEXT" \
+    --target main
 
 # shellcheck disable=SC2181
 if [ $? -eq 0 ]; then
