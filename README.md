@@ -42,7 +42,10 @@
 
 ## 📦 Установка и настройка
 
-1. Скачайте последнюю версию APK из раздела [Releases](https://github.com/Igor1974/Custom-Launcher-ROOT-/releases).
+1. Скачайте подходящую версию APK из раздела [Releases](https://github.com/Igor1974/Custom-Launcher-ROOT-/releases):
+    - **`armeabi-v7a`**: Для большинства ТВ-приставок и ТВ (32-бит).
+    - **`arm64-v8a`**: Для мощных устройств (Nvidia Shield, Chromecast 4K).
+    - **`universal`**: Общая версия для всех типов устройств.
 2. Установите на ваше Android TV устройство.
 3. **ROOT-права:** Для работы функций "Boost" и управления питанием крайне рекомендуется предоставить приложению ROOT-доступ в Magisk/APatch.
 4. **Кастомные обои:** Поместите файл `custom_wallpaper.jpg` во внутреннюю память устройства или укажите URL в настройках лаунчера.
@@ -56,6 +59,6 @@
 
 ---
 **Разработчик:** Igor1974
-**Текущая стабильная версия:** 5.0.5 (607)
+**Текущая стабильная версия:** 5.5.7 (750)
 
 <!-- Keywords: android tv launcher, tv box launcher, vpn, antizapret, root, boost, monitoring, jetpack compose, ota, deepnight, launcher for tv, 4pda, openvpn, leanback -->

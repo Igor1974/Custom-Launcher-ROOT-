@@ -92,7 +92,8 @@ with open('$UPDATE_JSON', 'w') as f:
 
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
-git add "$UPDATE_JSON" release.sh
+# Добавляем все изменения (включая README.md и удаленные скриншоты)
+git add -A
 git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) with multi-ABI support"
 git pull origin main --rebase
 git push origin main
