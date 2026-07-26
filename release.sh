@@ -27,7 +27,13 @@ fi
 echo -e "Готовим мульти-релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 CHANGELOG_TEXT="Список изменений v$VERSION_NAME (Build $VERSION_CODE):
-Исправление ошибок"
+🚀 DEEP NIGHT AI STUDIO: Полноценный чат-бот с историей диалога.
+🗣️ РЕЖИМ ГОВОРИ С DEEP NIGHT: Автоматическая активация микрофона после ответа ассистента.
+🧠 LONG-TERM MEMORY: ИИ теперь самообучается, запоминает ваше имя и предпочтения.
+⚡ ОПТИМИЗАЦИЯ ДВИЖКА: Полный переход на Media3 (ExoPlayer). VLC удален, APK стал легче.
+📺 СТАБИЛЬНОСТЬ ТВ: Исправлены вылеты и зависания при переключении каналов.
+🎯 УМНАЯ НАВИГАЦИЯ: Рестарт лаунчера по двойному клику HOME, 'Недавние' по кнопке BACK.
+🛡️ PROGUARD SECURITY: Усиленная защита всех новых функций в релизной сборке."
 
 # 4. Поиск APK для разных архитектур
 APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
@@ -39,20 +45,22 @@ if [ -z "$APK_UNIVERSAL" ]; then
     APK_UNIVERSAL=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 fi
 
-if [ -z "$APK_ARM" ] && [ -z "$APK_ARM64" ]; then
+if [ -z "$APK_ARM" ] && [ -z "$APK_ARM64" ] && [ -z "$APK_UNIVERSAL" ]; then
     echo -e "${RED}Ошибка: APK не найдены! Сначала выполните: ./gradlew assembleRelease${NC}"
     exit 1
 fi
 
-# Проверка свежести файлов
-APK_TIME=$(stat -c %Y "$APK_UNIVERSAL")
-NOW_TIME=$(date +%s)
-if [ $((NOW_TIME - APK_TIME)) -gt 600 ]; then
-    echo -e "${RED}Предупреждение: APK старше 10 минут!${NC}"
-    read -p "Продолжить со старыми файлами? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+# Проверка свежести файлов (если есть хотя бы один файл)
+if [ -n "$APK_UNIVERSAL" ] && [ -f "$APK_UNIVERSAL" ]; then
+    APK_TIME=$(stat -c %Y "$APK_UNIVERSAL")
+    NOW_TIME=$(date +%s)
+    if [ $((NOW_TIME - APK_TIME)) -gt 600 ]; then
+        echo -e "${RED}Предупреждение: APK старше 10 минут!${NC}"
+        read -p "Продолжить со старыми файлами? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
     fi
 fi
 
@@ -67,8 +75,11 @@ if [ ! -f "$UPDATE_JSON" ]; then
     echo '{"versionCode": 0, "versionName": "0", "link": "", "changelog": ""}' > "$UPDATE_JSON"
 fi
 
-APK_UNIVERSAL_FILENAME=$(basename "$APK_UNIVERSAL")
-DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME/$APK_UNIVERSAL_FILENAME"
+DOWNLOAD_URL="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v$VERSION_NAME"
+if [ -n "$APK_UNIVERSAL" ]; then
+    APK_UNIVERSAL_FILENAME=$(basename "$APK_UNIVERSAL")
+    DOWNLOAD_URL="$DOWNLOAD_URL/$APK_UNIVERSAL_FILENAME"
+fi
 
 echo -e "${BLUE}Обновляю $UPDATE_JSON (ссылка на Universal)...${NC}"
 export CHANGELOG_ENV="$CHANGELOG_TEXT"
@@ -87,7 +98,7 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -A
-git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) with multi-ABI support"
+git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - AI Studio Update"
 git pull origin main --rebase
 git push origin main
 
@@ -111,14 +122,14 @@ files=()
 echo "Загружаю файлы: ${files[*]}"
 
 gh release create "$TAG" "${files[@]}" \
-    --title "Release $VERSION_NAME" \
+    --title "Release $VERSION_NAME - AI Studio" \
     --notes "$CHANGELOG_TEXT" \
     --target main
 
 # shellcheck disable=SC2181
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}======================================"
-    echo -e "    РЕЛИЗ v$VERSION_NAME (Multi-ABI) УСПЕШНО ЗАВЕРШЕН!"
+    echo -e "    РЕЛИЗ v$VERSION_NAME (AI STUDIO) УСПЕШНО ЗАВЕРШЕН!"
     echo -e "======================================${NC}"
 else
     echo -e "${RED}Произошла ошибка при создании релиза.${NC}"
