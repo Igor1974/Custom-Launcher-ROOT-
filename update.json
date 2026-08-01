@@ -2,6 +2,6 @@
     "versionCode": 762,
     "versionName": "5.6.1",
     "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "Список изменений v5.6.1 (Build 762):\nПоддержка Gemini, DeepSeek, Mistral и OpenAI в одном ассистенте.\nИИ теперь самообучается, запоминает ваше имя и предпочтения.\nИсправление ошибок.",
+    "changelog": "Список изменений v5.6.1 (Build 762):\n1. Интеллект: Обучаемая память и персонализация.\n2. Контроль: HDMI, диагностика сети, глубокое управление приложениями (Root).\n3. Контент: Полная интеграция с ТВ-программой (EPG).\n4. Стиль: Новая 3D-заставка в стиле ИИ.",
     "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.1/app-universal-release.apk"
 }

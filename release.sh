@@ -27,9 +27,10 @@ fi
 echo -e "Готовим мульти-релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
 CHANGELOG_TEXT="Список изменений v$VERSION_NAME (Build $VERSION_CODE):
-Поддержка Gemini, DeepSeek, Mistral и OpenAI в одном ассистенте.
-ИИ теперь самообучается, запоминает ваше имя и предпочтения.
-Исправление ошибок."
+1. Интеллект: Обучаемая память и персонализация.
+2. Контроль: HDMI, диагностика сети, глубокое управление приложениями (Root).
+3. Контент: Полная интеграция с ТВ-программой (EPG).
+4. Стиль: Новая 3D-заставка в стиле ИИ."
 
 # 4. Поиск APK для разных архитектур
 APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
