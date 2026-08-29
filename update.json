@@ -1,7 +1,7 @@
 {
-    "versionCode": 764,
-    "versionName": "5.6.3",
-    "url": "https://raw.githubusercontent.com/igor84/CustomLauncherRoot/main/DeepNight_Launcher_v5.2.8.apk",
-    "changelog": "Список изменений v5.6.3 (Build 764):\nОптимизация: Новый Мастер Оптимизации (полная AOT-компиляция приложений).\nНастройки: Добавлен расширенный раздел системных параметров и калибровки.\nИнтеллект: Улучшена обучаемость и память ИИ. Исправлены ошибки голосового движка.\nTCL: Полная интеграция с кнопкой микрофона и системным поиском TCL.\nСтабильность: Усилена защита релизных сборок и исправлены критические зависания.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.3/app-universal-release.apk"
+    "versionCode": 770,
+    "versionName": "5.6.4",
+    "url": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.4/app-universal-release.apk",
+    "changelog": "Список изменений v5.6.4 (Build 770) - Lite & Smart:\nПроизводительность: Концепция «Lite Start» — макс. легкий запуск без фоновой нагрузки.\nОбучение: Новый 9-шаговый Мастер Настройки (подробно про Root, AOT, DSP) с отложенным запросом суперпользователя.\nРеактивность: Мгновенное обновление статусбара (погода, CPU, RAM) при переключении настроек без перезапуска.\nИнтерфейс: Улучшена боковая панель с всплывающими подсказками, вызовом ИИ и проверкой PRO.\nНастройки: Добавлен тумблер «Автозапуск при загрузке» и уточнен диалог TorrServe.\nPRO: Нейросетевая озвучка ElevenLabs, память ИИ, DSP-движок и 4K обои.\nСтабильность: Оптимизирована работа на слабых ТВ и проекторах с 1ГБ RAM.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.4/app-universal-release.apk"
 }
