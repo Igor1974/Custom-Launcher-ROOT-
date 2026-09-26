@@ -140,7 +140,7 @@ files=()
 echo "Загружаю файлы: ${files[*]}"
 
 gh release create "$TAG" "${files[@]}" \
-    --title "Release $VERSION_NAME - AI Studio" \
+    --title "DeepNight Ultimate v$VERSION_NAME — Streaming TTS & AI Studio" \
     --notes "$CHANGELOG_TEXT" \
     --target main
 
