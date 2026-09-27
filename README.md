@@ -83,7 +83,7 @@
 - **`:sdk:dap-core`**: Нативный C++20 аудио-пайплайн (FFT, VAD) с минимальной задержкой.
 - **`:sdk:ai-commands`**: Лингвистический модуль для русскоязычного поиска и стемминга.
 
-> Подробнее о структуре SDK смотрите в файле [`sdk/README.md`]([sdk/README.md](https://github.com/Igor1974/DeepNightSDK/blob/main/README.md)) и [`sdk/PITCH_4PDA_HABR.md`]([sdk/PITCH_4PDA_HABR.md](https://github.com/Igor1974/DeepNightSDK/blob/main/PITCH_4PDA_HABR.md)).
+> Подробнее о структуре SDK смотрите в файле (https://github.com/Igor1974/DeepNightSDK/blob/main/README.md)) и (https://github.com/Igor1974/DeepNightSDK/blob/main/PITCH_4PDA_HABR.md)).
 
 ---
 
