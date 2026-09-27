@@ -1,10 +1,6 @@
 # DeepNight Ultimate (Custom Launcher ROOT)
 
 <p align="center">
-  <img src="app/src/main/res/drawable/banner.png" alt="DeepNight Ultimate Banner" width="100%" />
-</p>
-
-<p align="center">
   <a href="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases"><img src="https://img.shields.io/github/v/release/Igor1974/Custom-Launcher-ROOT-?style=for-the-badge&color=blue" alt="Latest Release"></a>
   <a href="https://android.com"><img src="https://img.shields.io/badge/Android_TV-9.0%2B-green?style=for-the-badge&logo=android" alt="Android TV 9.0+"></a>
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.0-purple?style=for-the-badge&logo=kotlin" alt="Kotlin"></a>
