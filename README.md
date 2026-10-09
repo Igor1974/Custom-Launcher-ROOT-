@@ -1,6 +1,10 @@
 # DeepNight Ultimate (Custom Launcher ROOT)
 
 <p align="center">
+  <img src="app/src/main/res/drawable/banner.png" alt="DeepNight Ultimate Banner" width="100%" />
+</p>
+
+<p align="center">
   <a href="https://github.com/Igor1974/Custom-Launcher-ROOT-/releases"><img src="https://img.shields.io/github/v/release/Igor1974/Custom-Launcher-ROOT-?style=for-the-badge&color=blue" alt="Latest Release"></a>
   <a href="https://android.com"><img src="https://img.shields.io/badge/Android_TV-9.0%2B-green?style=for-the-badge&logo=android" alt="Android TV 9.0+"></a>
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.0-purple?style=for-the-badge&logo=kotlin" alt="Kotlin"></a>
@@ -25,50 +29,26 @@
 ## 📸 Скриншоты
 
 <p align="center">
- 
+  <img src="screenshots/Screenshot_20260630_190040.png" width="90%" alt="Главный экран DeepNight Ultimate" />
 </p>
 
 ---
 
 ## ⚡ Ключевые возможности
 
-### ⚙️ Нативное C++20 ядро (DeepNightEngine)
-- **Минимальная нагрузка на ресурсы:** Тяжелые математические вычисления (FFT-анализ аудио, фонетический поиск, стемминг, парсинг медиаданных) вынесены в C++20 NDK код. Это обеспечивает плавные 60 FPS даже на бюджетных ТВ-приставах.
-- **Инфо-панель (Dashboard):** Мониторинг температуры процессора (CPU), оперативной памяти (RAM) и скорости сети в реальном времени.
-- **Нулевое потребление CPU в режиме ожидания.**
+### 🤖 1. ИИ-Экосистема и Голосовой Ассистент
+- **Deep Night Offline AI (On-Device):** Первый в мире автономный квантованный ИИ `Qwen 2.5 0.5B GGUF Q4_K_M` (380 МБ), работающий 100% на процессоре ТВ без интернета.
+- **Интеграция с Яндекс Фактами & Поиском:** Быстрый подтяг информации на любые бытовые и научные вопросы.
+- **Мульти-модельность (BYOK):** Поддержка Yandex GPT, Cerebras AI (1800 токенов/сек), SambaNova, OpenRouter, Together AI, Gemini, DeepSeek, Groq, Mistral, GigaChat.
+- **Запоминание контекста:** Автоматическое запоминание имени пользователя, вкусов и персональной истории.
 
-### 🛠 Системные функции и ROOT-инструменты
-- **Оптимизация (Boost):** Очистка фоновых процессов и системного кэша в один клик.
-- **T-Guard & RW-remount:** Расширенные инструменты для опытных пользователей (правка системных партиций `/product`, `/vendor`, `/odm`, оптимизация системных лимитов).
-- **Управление питанием:** Быстрый доступ к перезагрузке (обычной, Recovery, Bootloader) и выключению устройства.
+### 🎨 2. Единый Кастомизатор и Live Preview
+- **6 подвкладок стилей:** Пресеты (Apple TV, Cyberpunk), Настройка иконок, Цветовая палитра, Системные шрифты, Уведомления, Оверлей громкости.
+- **Динамический Эквалайзер:** 5-полосный анимационный индикатор уровня сигнала с возможностью выбора цвета и позиции.
 
-### 🌐 Сеть, Трафик и VPN
-- **Встроенный VPN (АнтиЗапрет):** Интегрированный OpenVPN-клиент для обхода блокировок кинематографических ресурсов «из коробки».
-- **DeepTunnel PRO:** Локальная фрагментация пакетов для стабилизации передачи потокового 4K/HDR видео.
-- **Мониторинг соединений:** Автоматическое определение активных сетей и аудиовыходов (HDMI, ARC, Bluetooth, USB, AUX).
-
-### 🤖 ИИ-Студия и Голос
-- **Мульти-модельная ИИ-студия:** Интеграция с Gemini, OpenAI, Groq, GigaChat для умного ассистента, генерации обоев и рекомендаций.
-- **Офлайн-TTS и VAD:** Нативный C++ детектор голоса и озвучивание текста без сетевых задержек.
-
-### 🎬 Медиа, Поиск и Интеграции
-- **Все включено:** Встроенные модули IPTV, Радио, Торрент-агрегатора (TorrServe), Игр и Погоды.
-- **C++ DSP Аудио:** Нативный эквалайзер и неоновые спектрограммы/визуализаторы.
-- **Глобальный фонетический поиск:** Находит фильмы, даже если название введено с ошибкой или транслитом.
-
----
-
-## 📊 Сравнение с аналогами
-
-| Функция / Возможность | **DeepNight Ultimate** | **Projectivy Launcher** | **ATV Launcher** | **Стоковый Leanback** |
-| :--- | :---: | :---: | :---: | :---: |
-| **UI Фреймворк** | **Jetpack Compose TV** | Custom Android Views | Legacy Views | Leanback / Android TV |
-| **C++20 NDK Движок (DSP / FFT)** | ✅ **Да** | ❌ Нет | ❌ Нет | ❌ Нет |
-| **Встроенный VPN (АнтиЗапрет)** | ✅ **Да** | ❌ Нет | ❌ Нет | ❌ Нет |
-| **Мульти-модельная ИИ-студия** | ✅ **Gemini / Groq / GigaChat** | ❌ Нет | ❌ Нет | ❌ Ограничен Google Assistant |
-| **Root-инструменты (Boost / T-Guard)** | ✅ **Да** | ❌ Нет | ❌ Нет | ❌ Нет |
-| **Офлайн TTS & VAD (C++)** | ✅ **Да** | ❌ Нет | ❌ Нет | ❌ Нет |
-| **Фонетический поиск медиа** | ✅ **Да** | ❌ Нет | ❌ Нет | ❌ Базовый |
+### ⚙️ 3. Производительность и C++20 Ядро
+- **Асинхронные шрифты:** Сканирование системных шрифтов вынесено в `Dispatchers.IO` с кешированием в `ConcurrentHashMap`.
+- **Оптимизированный фокус:** Безупречная D-Pad навигация в подменю активных модулей без потерь фокуса.
 
 ---
 
@@ -79,7 +59,7 @@
 - **`:sdk:dap-core`**: Нативный C++20 аудио-пайплайн (FFT, VAD) с минимальной задержкой.
 - **`:sdk:ai-commands`**: Лингвистический модуль для русскоязычного поиска и стемминга.
 
-> Подробнее о структуре SDK смотрите в файле (https://github.com/Igor1974/DeepNightSDK/blob/main/README.md)) и (https://github.com/Igor1974/DeepNightSDK/blob/main/PITCH_4PDA_HABR.md)).
+> Подробнее о структуре SDK смотрите в файле [`sdk/README.md`](sdk/README.md) и [`sdk/PITCH_4PDA_HABR.md`](sdk/PITCH_4PDA_HABR.md).
 
 ---
 
@@ -115,12 +95,3 @@
 
 - **Языки:** Kotlin, C++20 (NDK Engine)
 - **UI:** Jetpack Compose TV / Material 3
-- **Network & Audio:** OkHttp 4, OpenVPN Core, C++ FFT/DSP Audio Pipeline
-- **Shell & Root:** libsu (ROOT interop)
-
----
-
-<p align="center">
-  <b>Разработчик:</b> Igor1974 • <b>Версия:</b> DeepNight Ultimate 5.5.7<br/>
-  <i>Сделано с любовью для сообщества Android TV 🚀</i>
-</p>
