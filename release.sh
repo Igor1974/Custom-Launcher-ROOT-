@@ -39,7 +39,9 @@ CHANGELOG_TEXT="Список изменений v${VERSION_NAME} (Build ${VERSIO
 
 🌐 Поиск Яндекса & Расширение ИИ-моделей
 * Яндекс Факты & Поиск: прямое подтягивание фактов и ответов на вопросы из Яндекса и Википедии.
-* Новые ИИ-провайдеры: поддержка Yandex GPT, Cerebras AI (1800 токенов/сек), SambaNova, OpenRouter Free и Together AI."
+* Новые ИИ-провайдеры: поддержка Yandex GPT, Cerebras AI (1800 токенов/сек), SambaNova, OpenRouter Free и Together AI.
+
+Испрвление найденных ошибок."
 
 
 # 4. Поиск APK для разных архитектур
