@@ -26,23 +26,36 @@ fi
 
 echo -e "Готовим мульти-релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
+# 3. Автоматическая сборка если нет свежего APK
+APK_UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal-release.apk" | head -n 1)
+if [ -z "$APK_UNIVERSAL" ]; then
+    APK_UNIVERSAL=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+fi
+
+if [ -z "$APK_UNIVERSAL" ] || [ ! -f "$APK_UNIVERSAL" ]; then
+    echo -e "${BLUE}Запуск сборки релизных APK...${NC}"
+    ./gradlew :app:assembleRelease
+fi
+
 CHANGELOG_TEXT="Список изменений v${VERSION_NAME} (Build ${VERSION_CODE}):
 
-🤖 Впервые на Android TV: Локальный ИИ (DeepNight Offline AI)
-* 100% Автономность: запуск квантованной нейросети прямо на процессоре ТВ без интернета.
-* Обучение и обновление в 1 клик: модель постоянно дообучается командам, а обновлять файлы нейросети можно прямо из настроек лаунчера без переустановки APK.
-* Персональная память: автоматическое запоминание имени пользователя, вкусов и моментальное управление ТВ (приложения, фильмы, громкость, каналы).
+🎨 Автоматический смарт-маппинг Icon Pack
+* Интеллектуальный поиск тем: лаунчер сам подбирает иконки для TV-приложений (YouTube TV, Настройки, Плееры) без мануальной настройки.
+* Двухэтапная пре-сборка (Zero-Lag): считывание и нормализация тем в фоновом потоке корутин с индикатором прогресса.
+* Чистые иконки: векторная отрисовка логотипов без искусственных квадратных подложек.
 
-🎨 Единая Студия кастомизации & Live Preview
-* 6 подвкладок стиля: Глобальные пресеты (Apple TV, Cyberpunk), Настройки иконок, Палитра цветов, Системные шрифты, Уведомления и Оверлей громкости.
-* Динамический 5-полосный эквалайзер: анимационный индикатор уровня сигнала с выбором цвета и положения.
+📺 Полноэкранный студийный кастомизатор
+* Студия кастомизации разворачивается во весь 1080p экран для удобной работы с темами, цветами, шрифтами и генератором BootAnimation.
+* Компактные остальные меню настроек (480.dp) без загромождения рабочего стола.
 
-🌐 Поиск Яндекса & Расширение ИИ-моделей
-* Яндекс Факты & Поиск: прямое подтягивание фактов и ответов на вопросы из Яндекса и Википедии.
-* Новые ИИ-провайдеры: поддержка Yandex GPT, Cerebras AI (1800 токенов/сек), SambaNova, OpenRouter Free и Together AI.
+⚡ Оптимизация графики и аппаратной памяти (60 FPS)
+* Полностью устранены перегрузки ION/EGL на ТВ-приставках TCL, Realtek, Amlogic.
+* Удалены устаревшие фоновые процессы для минимизации нагрузки на процессор и RAM.
 
-Испрвление найденных ошибок."
+🔒 Защита PRO-состояния
+* Усилена KeyStore-защита DSP-аудиопроцессора и кастомных тем.
 
+Исправление найденных ошибок и повышение стабильности."
 
 # 4. Поиск APK для разных архитектур
 APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
@@ -50,7 +63,6 @@ APK_ARM64=$(find app/build/outputs/apk/release -name "*arm64-v8a-release.apk" | 
 APK_UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal-release.apk" | head -n 1)
 
 if [ -z "$APK_UNIVERSAL" ]; then
-    # Fallback if universal is disabled
     APK_UNIVERSAL=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
 fi
 
@@ -59,26 +71,12 @@ if [ -z "$APK_ARM" ] && [ -z "$APK_ARM64" ] && [ -z "$APK_UNIVERSAL" ]; then
     exit 1
 fi
 
-# Проверка свежести файлов (если есть хотя бы один файл)
-if [ -n "$APK_UNIVERSAL" ] && [ -f "$APK_UNIVERSAL" ]; then
-    APK_TIME=$(stat -c %Y "$APK_UNIVERSAL")
-    NOW_TIME=$(date +%s)
-    if [ $((NOW_TIME - APK_TIME)) -gt 600 ]; then
-        echo -e "${RED}Предупреждение: APK старше 10 минут!${NC}"
-        read -p "Продолжить со старыми файлами? (y/n) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
-fi
-
 echo -e "Найдены файлы:"
 [ -f "$APK_ARM" ] && echo -e "- ARM (32bit): ${GREEN}$(basename "$APK_ARM")${NC}"
 [ -f "$APK_ARM64" ] && echo -e "- ARM64 (64bit): ${GREEN}$(basename "$APK_ARM64")${NC}"
 [ -f "$APK_UNIVERSAL" ] && echo -e "- Universal: ${GREEN}$(basename "$APK_UNIVERSAL")${NC}"
 
-# 5. Обновление update.json (всегда используем Universal для авто-обновления)
+# 5. Обновление update.json
 UPDATE_JSON="update.json"
 if [ ! -f "$UPDATE_JSON" ]; then
     echo '{"versionCode": 0, "versionName": "0", "link": "", "changelog": ""}' > "$UPDATE_JSON"
@@ -107,7 +105,7 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -A
-git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - AI Studio Update"
+git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - Icon Pack & Customizer Studio Update"
 git pull origin main --rebase
 git push origin main
 
@@ -119,10 +117,9 @@ if gh release view "$TAG" &>/dev/null; then
     echo "Релиз $TAG уже существует. Перезаписываю..."
     gh release delete "$TAG" --yes
     git push --delete origin "$TAG" 2>/dev/null
-    sleep 3 # Даем GitHub время на удаление
+    sleep 3
 fi
 
-# Собираем список файлов для загрузки через массив (самый надежный способ в bash)
 files=()
 [ -f "$APK_ARM" ] && files+=("$APK_ARM")
 [ -f "$APK_ARM64" ] && files+=("$APK_ARM64")
@@ -131,14 +128,13 @@ files=()
 echo "Загружаю файлы: ${files[*]}"
 
 gh release create "$TAG" "${files[@]}" \
-    --title "DeepNight Ultimate v$VERSION_NAME — Streaming TTS & AI Studio" \
+    --title "DeepNight Ultimate v$VERSION_NAME — Icon Pack & Fullscreen Studio" \
     --notes "$CHANGELOG_TEXT" \
     --target main
 
-# shellcheck disable=SC2181
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}======================================"
-    echo -e "    РЕЛИЗ v$VERSION_NAME (AI STUDIO) УСПЕШНО ЗАВЕРШЕН!"
+    echo -e "    РЕЛИЗ v$VERSION_NAME УСПЕШНО ЗАВЕРШЕН!"
     echo -e "======================================${NC}"
 else
     echo -e "${RED}Произошла ошибка при создании релиза.${NC}"
