@@ -26,15 +26,10 @@ fi
 
 echo -e "Готовим мульти-релиз: ${GREEN}v$VERSION_NAME ($VERSION_CODE)${NC}"
 
-# 3. Автоматическая сборка если нет свежего APK
-APK_UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal-release.apk" | head -n 1)
-if [ -z "$APK_UNIVERSAL" ]; then
-    APK_UNIVERSAL=$(find app -name "*release*.apk" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-fi
-
-if [ -z "$APK_UNIVERSAL" ] || [ ! -f "$APK_UNIVERSAL" ]; then
-    echo -e "${BLUE}Запуск сборки релизных APK...${NC}"
-    ./gradlew :app:assembleRelease
+# 3. Принудительное использование свежесобранного APK
+APK_UNIVERSAL="app/build/outputs/apk/release/app-release.apk"
+if [ ! -f "$APK_UNIVERSAL" ]; then
+    APK_UNIVERSAL=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
 fi
 
 CHANGELOG_TEXT="Список изменений v${VERSION_NAME} (Build ${VERSION_CODE}):
