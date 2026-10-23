@@ -1,7 +1,7 @@
 {
-    "versionCode": 786,
-    "versionName": "5.7.1",
+    "versionCode": 787,
+    "versionName": "5.7.2",
     "url": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.6/app-universal-release.apk",
-    "changelog": "Список изменений v5.7.1 (Build 786):\n\n🛠️ Исправление выявленных ошибок и повышение стабильности\n* Исправление ошибок фокуса и навигации на главном экране Android TV.\n* Улучшение стабильности фоновых служб и обработки аудиосессий DeepNightDSP.\n* Повышение производительности и оптимизация использования памяти.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.7.1/app-release.apk"
+    "changelog": "Список изменений v5.7.2 (Build 787):\n\n🛠️ Исправление выявленных ошибок и повышение стабильности\n* Мгновенное отображение встроенных активных модулей и иконок на первом кадре (Frame 1).\n* Восстановлена работа погоды: многоуровневый фоллбэк (WeatherAPI, Open-Meteo, Яндекс.Погода, wttr.in) и фоновое автообновление.\n* Исправлен сброс пользовательских обоев: фоновый воркер сохраняет выбранный файл/папку.\n* Повышение производительности и оптимизация обработки изображений.",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.7.2/app-release.apk"
 }
