@@ -1,7 +1,7 @@
 {
-    "versionCode": 788,
-    "versionName": "5.7.3",
+    "versionCode": 789,
+    "versionName": "5.7.4",
     "url": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.6.6/app-universal-release.apk",
-    "changelog": "Список изменений v5.7.3 (Build 788):\n\n🛠️ Оптимизация и совместимость с RuStore\n* Удалены системные/защищенные разрешения (INSTALL_PACKAGES, REBOOT, BIND_ACCESSIBILITY_SERVICE и др.) для полного соответствия политике безопасности RuStore.\n* Мгновенное отображение встроенных активных модулей и иконок на первом кадре (Frame 1).\n* Восстановлена работа погоды: многоуровневый фоллбэк (WeatherAPI, Open-Meteo, Яндекс.Погода, wttr.in) и фоновое автообновление.\n* Исправлен сброс пользовательских обоев: фоновый воркер сохраняет выбранный файл/папку.",
-    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.7.3/app-release.apk"
+    "changelog": "Список изменений v5.7.4 (Build 789):\n\n🛠️ Улучшение начального фокуса и выживаемости PRO-лицензии\n* Исправлен первоначальный фокус при старте лаунчера и первом запуске после установки.\n* Настроено автоматическое выживание и восстановление PRO-ключа при чистой переустановке приложения.\n* Оптимизирована синхронизация сфокусированного приложения в ядре LauncherController.\n* Полная готовность для публикации в RuStore и Google Play (APK и AAB).",
+    "link": "https://github.com/Igor1974/Custom-Launcher-ROOT-/releases/download/v5.7.4/app-release.apk"
 }
