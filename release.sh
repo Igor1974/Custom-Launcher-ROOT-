@@ -34,11 +34,11 @@ fi
 
 CHANGELOG_TEXT="Список изменений v${VERSION_NAME} (Build ${VERSION_CODE}):
 
-🛠️ Улучшение начального фокуса и выживаемости PRO-лицензии
-* Исправлен первоначальный фокус при старте лаунчера и первом запуске после установки.
-* Настроено автоматическое выживание и восстановление PRO-ключа при чистой переустановке приложения.
-* Оптимизирована синхронизация сфокусированного приложения в ядре LauncherController.
-* Полная готовность для публикации в RuStore и Google Play (APK и AAB)."
+🚀 Автономный модуль «Твики и AppManager», Живые обои и Модульная архитектура
+* Новый модуль «Твики и AppManager»: пакетный деблоат в одной Root-сессии (TCL, Xiaomi, Google TV, Ghost Protocol), заморозка приложений, блокировка рекламных SDK/трекеров, управление автозапуском, правами AppOps и ускорение ядра Android 11–15+.
+* Живые и генеративные 3D/AI обои: интерактивные фоновые сцены на аппаратном ускорении GPU без нагрузки на процессор и память.
+* Единая модульная система (1 лаунчер вместо 15 программ): встроенные модули (Твики, AppManager, ТВ/IPTV, Фильмы, Радио, Файлы, Игры, DLNA-ресивер, ИИ-Ассистент, DSP-Эквалайзер) работают в одном процессе на C++20 ядре, экономя до 2.5 ГБ ПЗУ и до 900 МБ ОЗУ.
+* Улучшена навигация пультом (D-Pad) и визуальная подсветка фокуса во всех разделах и диалогах."
 
 # 4. Поиск APK для разных архитектур
 APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
@@ -88,7 +88,7 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -A
-git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - Icon Pack & Customizer Studio Update"
+git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - Tweaks & AppManager Module, Live Wallpapers & Modular Core"
 git pull origin main --rebase
 git push origin main
 
@@ -111,7 +111,7 @@ files=()
 echo "Загружаю файлы: ${files[*]}"
 
 gh release create "$TAG" "${files[@]}" \
-    --title "DeepNight Ultimate v$VERSION_NAME — Icon Pack & Fullscreen Studio" \
+    --title "DeepNight Ultimate v$VERSION_NAME — Tweaks & AppManager, Live Wallpapers & Modular System" \
     --notes "$CHANGELOG_TEXT" \
     --target main
 
