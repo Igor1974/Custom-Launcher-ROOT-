@@ -34,11 +34,12 @@ fi
 
 CHANGELOG_TEXT="Список изменений v${VERSION_NAME} (Build ${VERSION_CODE}):
 
-🌌 HD Живые 3D-обои («Моя Волна» и 10 уникальных GPU-миров), Твики & AppManager и Модульное ядро
-* 10 индивидуальных HD 3D-обоев (GLES 3.0 highp 720p + IGN-дизеринг): «Моя Волна» в стиле Яндекс Музыки (Неон, Спокойный, Драйв), «Феррожидкость · Магнит», «Горизонт Событий (Gargantua)», «ИИ-Ядро · Квантовый Интеллект», «Квантовая Топография (LiDAR)», «Хроносфера · Астролябия», «Космическая Галактика», «PS3 XMB», «Aurora Borealis» и «Balatro».
-* Интерактивная реакция живых обоев на навигацию по иконкам (D-Pad): плавный пружинный параллакс, волновой импульс и динамическое перетекание в цвет выбранной иконки приложения + реакция на спектр звука (FFT).
-* Автономный модуль «Твики и AppManager»: пакетный деблоат в одной Root-сессии (TCL, Xiaomi, Google TV, Ghost Protocol), заморозка приложений, блокировка рекламных SDK/трекеров, управление автозапуском, правами AppOps и ускорение ядра Android 11–15+.
-* Единая модульная архитектура (1 лаунчер вместо 15 программ): все модули работают в одном процессе на C++20 ядре, экономя до 2.5 ГБ ПЗУ и до 900 МБ ОЗУ."
+🎬 Встроенный видеоплеер, Единая модульная система и Высокое качество (~23 МБ)
+* Собственный видеоплеер: Просмотр фильмов и сериалов доступен прямо в DeepNight Launcher. Больше не нужно скачивать, покупать или настраивать сторонние приложения.
+* Единая модульная система (1 лаунчер вместо 15 программ): Все необходимые функции (кинотеатр, ТВ-каналы, очистка и ускорение системы, файловый менеджер, живые обои и голосовой помощник) работают в одном приложении, экономя место на ТВ и память устройства.
+* Высокая скорость и стабильность: Фильмы в высоком качестве запускаются за считанные секунды, а перемотка работает плавно и без зависаний.
+* Кинематографическое качество: Полная поддержка 4K, HDR, Dolby Vision и объемного звука — идеальная картинка без лагов и дерганий на любых телевизорах.
+* Компактность и легкость: Полноценный медиацентр и лончер занимают всего ~23 МБ."
 
 # 4. Поиск APK для разных архитектур
 APK_ARM=$(find app/build/outputs/apk/release -name "*armeabi-v7a-release.apk" | head -n 1)
@@ -88,7 +89,7 @@ with open('$UPDATE_JSON', 'w') as f:
 # 6. Git commit & push
 echo -e "${BLUE}Синхронизация с Git...${NC}"
 git add -A
-git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - Tweaks & AppManager Module, Live Wallpapers & Modular Core"
+git commit -m "Prepare release v$VERSION_NAME ($VERSION_CODE) - Built-in Video Player & High Performance Engine"
 git pull origin main --rebase
 git push origin main
 
@@ -111,7 +112,7 @@ files=()
 echo "Загружаю файлы: ${files[*]}"
 
 gh release create "$TAG" "${files[@]}" \
-    --title "DeepNight Ultimate v$VERSION_NAME — Tweaks & AppManager, Live Wallpapers & Modular System" \
+    --title "DeepNight Ultimate v$VERSION_NAME — Built-in Video Player & Performance Upgrade" \
     --notes "$CHANGELOG_TEXT" \
     --target main
 
